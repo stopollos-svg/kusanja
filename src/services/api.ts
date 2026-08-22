@@ -38,7 +38,16 @@ Every single 5,000, 10,000, or 50,000 UGX sent via MTN MoMo or Airtel Money dire
     payoutPhone: '+256 772 458912',
     donorsCount: 142,
     featured: true,
-    createdAt: '2026-08-01T08:00:00Z',
+    createdAt: '2025-08-15T08:00:00Z', // 1 Year Sustained Active Campaign
+    activeDurationMonths: 12,
+    activeDurationDays: 372,
+    lastDonationAt: '2026-08-22T04:15:00Z',
+    recentDonations7d: 19,
+    recentDonations30d: 48,
+    activityScore: 97,
+    spotlightEligible1Year: true,
+    spotlightBadge: '🔥 1-Year Active Spotlight',
+    spotlightReason: 'Maintained active status for over 1 year (372 days) with 142 verified Mobile Money donors and regular hospital updates.',
     daysRemaining: 14,
     status: 'active',
     updates: [
@@ -905,4 +914,199 @@ export const api = {
 
     return { success: true, payout };
   },
+
+  /**
+   * Admin Authentication
+   * Allows login for bright@kusanya.com, stephen@kusanya.com, billy@kusanya.com, or any @kusanya.com with pass 1234
+   */
+  async adminLogin(email: string, password: string): Promise<{ success: boolean; admin?: any; error?: string }> {
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.admin) {
+          localStorage.setItem('kusanya_admin_session', JSON.stringify(data.admin));
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('Backend admin login offline. Validating via client gateway rules.', err);
+    }
+
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPass = (password || '').trim();
+    const isAllowedDomain = cleanEmail.endsWith('@kusanya.com');
+    const isSpecialAdmin = ['bright@kusanya.com', 'stephen@kusanya.com', 'billy@kusanya.com'].includes(cleanEmail);
+
+    if ((isAllowedDomain || isSpecialAdmin) && cleanPass === '1234') {
+      const namePart = cleanEmail.split('@')[0];
+      const capitalized = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+      const adminUser = {
+        email: cleanEmail,
+        name: `${capitalized} (Kusanya Admin)`,
+        role: 'superadmin',
+        token: `kusanya-token-${Date.now()}`,
+      };
+      localStorage.setItem('kusanya_admin_session', JSON.stringify(adminUser));
+      return { success: true, admin: adminUser };
+    }
+
+    return { 
+      success: false, 
+      error: 'Invalid admin credentials. Use bright@kusanya.com, stephen@kusanya.com, billy@kusanya.com or any @kusanya.com email with password 1234.' 
+    };
+  },
+
+  /**
+   * Update campaign (Edit story, target, category, featured status, KYC, etc.)
+   */
+  async updateCampaign(id: string, updates: Partial<Campaign>): Promise<{ success: boolean; campaign?: Campaign; error?: string }> {
+    try {
+      const res = await fetch(`/api/campaigns/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.campaign) {
+          // Sync local storage
+          const current = getStoredCampaigns();
+          const updatedList = current.map(c => c.id === id ? data.campaign : c);
+          saveStoredCampaigns(updatedList);
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('API updateCampaign failed. Updating local storage.', err);
+    }
+
+    const current = getStoredCampaigns();
+    let updatedObj: Campaign | undefined;
+    const updatedList = current.map(c => {
+      if (c.id === id || c.slug === id) {
+        updatedObj = { ...c, ...updates };
+        return updatedObj;
+      }
+      return c;
+    });
+
+    if (updatedObj) {
+      saveStoredCampaigns(updatedList);
+      return { success: true, campaign: updatedObj };
+    }
+
+    return { success: false, error: 'Campaign not found' };
+  },
+
+  /**
+   * Delete campaign (Admin)
+   */
+  async deleteCampaign(id: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const res = await fetch(`/api/campaigns/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          const current = getStoredCampaigns();
+          saveStoredCampaigns(current.filter(c => c.id !== id && c.slug !== id));
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('API deleteCampaign failed. Deleting locally.', err);
+    }
+
+    const current = getStoredCampaigns();
+    const filtered = current.filter(c => c.id !== id && c.slug !== id);
+    saveStoredCampaigns(filtered);
+    return { success: true, message: 'Campaign deleted successfully from Kusanya' };
+  },
+
+  /**
+   * Toggle Featured Spotlight on Top
+   */
+  async toggleFeatured(id: string, featured: boolean): Promise<{ success: boolean; campaign?: Campaign }> {
+    return this.updateCampaign(id, { featured });
+  },
+
+  /**
+   * Fetch comprehensive Admin Analytics and Collections breakdown
+   */
+  async getAdminAnalytics(): Promise<{ success: boolean; analytics: any }> {
+    try {
+      const res = await fetch('/api/admin/analytics');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.analytics) {
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('API admin analytics failed. Computing from local state.', err);
+    }
+
+    const campaigns = getStoredCampaigns();
+    const totalRaisedUGX = campaigns.reduce((sum, c) => sum + (c.raisedAmount || 0), 0);
+    const totalTargetUGX = campaigns.reduce((sum, c) => sum + (c.targetAmount || 0), 0);
+    const totalDonors = campaigns.reduce((sum, c) => sum + (c.donorsCount || 0), 0);
+    const totalPlatformFeesUGX = Math.round(totalRaisedUGX * 0.05);
+    const totalBeneficiaryFundsUGX = totalRaisedUGX - totalPlatformFeesUGX;
+
+    const categoryStats: Record<string, { count: number; raisedUGX: number }> = {};
+    campaigns.forEach(c => {
+      if (!categoryStats[c.category]) {
+        categoryStats[c.category] = { count: 0, raisedUGX: 0 };
+      }
+      categoryStats[c.category].count += 1;
+      categoryStats[c.category].raisedUGX += c.raisedAmount || 0;
+    });
+
+    const regionStats: Record<string, { count: number; raisedUGX: number }> = {};
+    campaigns.forEach(c => {
+      const reg = c.region || 'Central';
+      if (!regionStats[reg]) {
+        regionStats[reg] = { count: 0, raisedUGX: 0 };
+      }
+      regionStats[reg].count += 1;
+      regionStats[reg].raisedUGX += c.raisedAmount || 0;
+    });
+
+    const providerStats = {
+      mtn: { name: 'MTN Mobile Money (*165#)', totalUGX: Math.round(totalRaisedUGX * 0.58), count: Math.round(totalDonors * 0.56) },
+      airtel: { name: 'Airtel Money (*185#)', totalUGX: Math.round(totalRaisedUGX * 0.32), count: Math.round(totalDonors * 0.34) },
+      visa: { name: 'Visa & Mastercard (3DS)', totalUGX: Math.round(totalRaisedUGX * 0.07), count: Math.round(totalDonors * 0.07) },
+      paypal: { name: 'PayPal (Diaspora)', totalUGX: Math.round(totalRaisedUGX * 0.03), count: Math.round(totalDonors * 0.03) }
+    };
+
+    return {
+      success: true,
+      analytics: {
+        totalRaisedUGX,
+        totalTargetUGX,
+        totalDonors,
+        totalPlatformFeesUGX,
+        totalBeneficiaryFundsUGX,
+        activeCampaignsCount: campaigns.filter(c => c.status === 'active').length,
+        featuredCampaignsCount: campaigns.filter(c => c.featured).length,
+        completedCampaignsCount: campaigns.filter(c => c.status === 'completed' || c.raisedAmount >= c.targetAmount).length,
+        districtsCoveredCount: Array.from(new Set(campaigns.map(c => c.district))).length,
+        categoryStats,
+        regionStats,
+        providerStats,
+        payoutsCount: 6,
+        totalDisbursedUGX: Math.round(totalBeneficiaryFundsUGX * 0.45),
+      }
+    };
+  }
 };
+

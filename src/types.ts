@@ -50,6 +50,16 @@ export interface Campaign {
   daysRemaining: number;
   status: 'active' | 'completed' | 'paused';
   updates: CampaignUpdate[];
+  // 1-Year Activity & Spotlight Fields
+  activeDurationMonths?: number; // e.g. 12 months (1 year sustained)
+  activeDurationDays?: number; // e.g. 365 days
+  lastDonationAt?: string;
+  recentDonations7d?: number;
+  recentDonations30d?: number;
+  activityScore?: number; // 0 - 100
+  spotlightEligible1Year?: boolean; // Meets 1-year sustained activity criteria
+  spotlightBadge?: string; // e.g. "🔥 1-Year Active Spotlight"
+  spotlightReason?: string;
 }
 
 export interface PaymentInitiationRequest {
@@ -99,3 +109,30 @@ export interface PayoutRequest {
   status: 'pending' | 'approved' | 'disbursed';
   disbursementRef?: string;
 }
+
+export interface AdminUser {
+  email: string;
+  name: string;
+  role: 'superadmin' | 'finance_admin' | 'moderator';
+  token?: string;
+}
+
+export interface AdminAnalytics {
+  totalRaisedUGX: number;
+  totalTargetUGX: number;
+  totalDonors: number;
+  totalPlatformFeesUGX: number;
+  totalBeneficiaryFundsUGX: number;
+  activeCampaignsCount: number;
+  featuredCampaignsCount: number;
+  completedCampaignsCount: number;
+  districtsCoveredCount: number;
+  categoryStats: Record<string, { count: number; raisedUGX: number }>;
+  regionStats: Record<string, { count: number; raisedUGX: number }>;
+  providerStats: Record<string, { name: string; totalUGX: number; count: number }>;
+  payoutsCount: number;
+  totalDisbursedUGX: number;
+  recentTransactions?: PaymentTransaction[];
+  recentPayouts?: PayoutRequest[];
+}
+

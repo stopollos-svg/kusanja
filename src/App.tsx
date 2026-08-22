@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Campaign, DonorCheer, PaymentTransaction } from './types';
+import { AdminUser, Campaign, DonorCheer, PaymentTransaction } from './types';
 import { api } from './services/api';
 import { Navbar } from './components/Navbar';
-import { HeroSection } from './components/HeroSection';
+import { FeaturedHeroSpotlight } from './components/FeaturedHeroSpotlight';
 import { CampaignCard } from './components/CampaignCard';
 import { CampaignDetailsModal } from './components/CampaignDetailsModal';
 import { MobileMoneyModal } from './components/MobileMoneyModal';
@@ -10,6 +10,9 @@ import { CreateCampaignModal } from './components/CreateCampaignModal';
 import { LiveDonationsTicker } from './components/LiveDonationsTicker';
 import { OrganizerPayoutModal } from './components/OrganizerPayoutModal';
 import { PaymentGatewayInfoModal } from './components/PaymentGatewayInfoModal';
+import { AdminLoginModal } from './components/AdminLoginModal';
+import { AdminDashboardModal } from './components/AdminDashboardModal';
+import { EditCampaignModal } from './components/EditCampaignModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { Footer } from './components/Footer';
 import { Heart, RefreshCw, Search, ShieldCheck, Sparkles } from 'lucide-react';
@@ -30,6 +33,19 @@ export default function App() {
   const [isCreatingCampaign, setIsCreatingCampaign] = useState<boolean>(false);
   const [isPayoutModalOpen, setIsPayoutModalOpen] = useState<boolean>(false);
   const [isGatewayInfoOpen, setIsGatewayInfoOpen] = useState<boolean>(false);
+
+  // Admin States
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(() => {
+    try {
+      const stored = localStorage.getItem('kusanya_admin_session');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [isAdminLoginOpen, setIsAdminLoginOpen] = useState<boolean>(false);
+  const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState<boolean>(false);
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
 
   // Platform Live Stats
   const [totalRaisedUGX, setTotalRaisedUGX] = useState<number>(70300000);
@@ -132,6 +148,34 @@ export default function App() {
     setSelectedCampaign(newCamp);
   };
 
+  // Handle admin login click
+  const handleOpenAdminPortal = () => {
+    if (adminUser) {
+      setIsAdminDashboardOpen(true);
+    } else {
+      setIsAdminLoginOpen(true);
+    }
+  };
+
+  const handleAdminLoginSuccess = (admin: AdminUser) => {
+    setAdminUser(admin);
+    setIsAdminDashboardOpen(true);
+  };
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem('kusanya_admin_session');
+    setAdminUser(null);
+    setIsAdminDashboardOpen(false);
+  };
+
+  const handleSaveCampaignEdit = async (updated: Campaign) => {
+    await api.updateCampaign(updated.id, updated);
+    await fetchCampaigns();
+    if (selectedCampaign && selectedCampaign.id === updated.id) {
+      setSelectedCampaign(updated);
+    }
+  };
+
   // Post organizer update
   const handlePostUpdate = async (campaignId: string, title: string, content: string) => {
     try {
@@ -164,6 +208,8 @@ export default function App() {
         onStartCampaign={() => setIsCreatingCampaign(true)}
         onOpenPayouts={() => setIsPayoutModalOpen(true)}
         onOpenGatewayInfo={() => setIsGatewayInfoOpen(true)}
+        onOpenAdmin={handleOpenAdminPortal}
+        adminUser={adminUser}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
@@ -173,18 +219,19 @@ export default function App() {
         donations={recentDonations}
       />
 
-      {/* Hero Banner with Live UGX Stats */}
-      <HeroSection
-        totalRaisedUGX={totalRaisedUGX}
-        totalDonors={totalDonors}
-        activeCampaignsCount={campaigns.length}
-        districtsCount={districtsCount}
+      {/* GoFundMe-Style Featured Fundraisers Hero Spotlight on Top */}
+      <FeaturedHeroSpotlight
+        campaigns={campaigns}
+        onSelectCampaign={(c) => setSelectedCampaign(c)}
+        onDonateToCampaign={(c) => setDonatingCampaign(c)}
+        onStartCampaign={() => setIsCreatingCampaign(true)}
+        onOpenGatewayInfo={() => setIsGatewayInfoOpen(true)}
         selectedCategory={selectedCategory}
         onSelectCategory={setSelectedCategory}
         selectedRegion={selectedRegion}
         onSelectRegion={setSelectedRegion}
-        onStartCampaign={() => setIsCreatingCampaign(true)}
-        onOpenGatewayInfo={() => setIsGatewayInfoOpen(true)}
+        totalRaisedUGX={totalRaisedUGX}
+        totalDonors={totalDonors}
       />
 
       {/* Main Campaign Grid Section */}
@@ -213,18 +260,30 @@ export default function App() {
           </div>
 
           {/* Quick Active Filter Badges */}
-          {(selectedCategory !== 'all' || selectedRegion !== 'all' || searchQuery) && (
-            <button
-              onClick={() => {
-                setSelectedCategory('all');
-                setSelectedRegion('all');
-                setSearchQuery('');
-              }}
-              className="text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-full transition-colors self-start sm:self-auto cursor-pointer border border-red-200"
-            >
-              Reset Filters (Show All)
-            </button>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {adminUser && (
+              <button
+                onClick={() => setIsAdminDashboardOpen(true)}
+                className="text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
+                <span>Admin Dashboard ({adminUser.email.split('@')[0]})</span>
+              </button>
+            )}
+
+            {(selectedCategory !== 'all' || selectedRegion !== 'all' || searchQuery) && (
+              <button
+                onClick={() => {
+                  setSelectedCategory('all');
+                  setSelectedRegion('all');
+                  setSearchQuery('');
+                }}
+                className="text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-full transition-colors self-start sm:self-auto cursor-pointer border border-red-200"
+              >
+                Reset Filters (Show All)
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Loading State */}
@@ -318,11 +377,49 @@ export default function App() {
         />
       )}
 
+      {/* Administrative Modals */}
+      {isAdminLoginOpen && (
+        <AdminLoginModal
+          isOpen={isAdminLoginOpen}
+          onClose={() => setIsAdminLoginOpen(false)}
+          onLoginSuccess={handleAdminLoginSuccess}
+        />
+      )}
+
+      {isAdminDashboardOpen && adminUser && (
+        <AdminDashboardModal
+          isOpen={isAdminDashboardOpen}
+          onClose={() => setIsAdminDashboardOpen(false)}
+          admin={adminUser}
+          onLogout={handleAdminLogout}
+          campaigns={campaigns}
+          onRefreshCampaigns={fetchCampaigns}
+          onSelectCampaignToEdit={(camp) => setEditingCampaign(camp)}
+          onCreateNewCampaign={() => {
+            setIsAdminDashboardOpen(false);
+            setIsCreatingCampaign(true);
+          }}
+          onViewCampaign={(camp) => {
+            setSelectedCampaign(camp);
+          }}
+        />
+      )}
+
+      {editingCampaign && (
+        <EditCampaignModal
+          campaign={editingCampaign}
+          isOpen={!!editingCampaign}
+          onClose={() => setEditingCampaign(null)}
+          onSave={handleSaveCampaignEdit}
+        />
+      )}
+
       {/* Footer */}
       <Footer
         onStartCampaign={() => setIsCreatingCampaign(true)}
         onOpenGatewayInfo={() => setIsGatewayInfoOpen(true)}
         onOpenPayouts={() => setIsPayoutModalOpen(true)}
+        onOpenAdmin={handleOpenAdminPortal}
         onSelectDistrict={(d) => setSearchQuery(d)}
       />
 
@@ -342,3 +439,4 @@ export default function App() {
     </div>
   );
 }
+

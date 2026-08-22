@@ -1,10 +1,12 @@
 import React from 'react';
 import { Heart, Lock, ShieldCheck, Smartphone } from 'lucide-react';
+import { KusanyaBrandLogo } from './KusanyaBrandLogo';
 
 interface FooterProps {
   onStartCampaign: () => void;
   onOpenGatewayInfo: () => void;
   onOpenPayouts: () => void;
+  onOpenAdmin?: () => void;
   onSelectDistrict: (district: string) => void;
 }
 
@@ -12,6 +14,7 @@ export const Footer: React.FC<FooterProps> = ({
   onStartCampaign,
   onOpenGatewayInfo,
   onOpenPayouts,
+  onOpenAdmin,
   onSelectDistrict,
 }) => {
   return (
@@ -23,16 +26,7 @@ export const Footer: React.FC<FooterProps> = ({
           
           {/* Col 1: Brand */}
           <div className="space-y-3 md:col-span-1">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm shadow-emerald-600/30">
-                <div className="w-5 h-5 border-2 border-white rounded-md flex items-center justify-center text-white">
-                  <Heart className="w-3 h-3 fill-white text-white" />
-                </div>
-              </div>
-              <span className="text-xl font-black tracking-tight text-white">
-                Kusanya<span className="text-emerald-500">.org</span>
-              </span>
-            </div>
+            <KusanyaBrandLogo size="md" variant="light" />
             <p className="text-slate-400 leading-relaxed text-xs">
               Uganda’s premier mobile money crowdfunding and community SACCO platform, powering verified medical, church ministry, SACCO revolving fund, and community causes across all 135+ districts.
             </p>
@@ -107,6 +101,16 @@ export const Footer: React.FC<FooterProps> = ({
                   <span>Organizer Payout Portal</span>
                 </button>
               </li>
+              {onOpenAdmin && (
+                <li>
+                  <button
+                    onClick={onOpenAdmin}
+                    className="text-amber-400 hover:text-amber-300 font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>🔒 Admin Collections Backend</span>
+                  </button>
+                </li>
+              )}
               <li>
                 <button
                   onClick={onStartCampaign}

@@ -64,6 +64,36 @@ app.post('/api/campaigns', (req: Request, res: Response) => {
   res.json({ success: true, campaign: newCamp });
 });
 
+app.put('/api/campaigns/:id', (req: Request, res: Response) => {
+  const idx = campaigns.findIndex(c => c.id === req.params.id || c.slug === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false, error: 'Campaign not found' });
+  campaigns[idx] = { ...campaigns[idx], ...req.body };
+  res.json({ success: true, campaign: campaigns[idx] });
+});
+
+app.delete('/api/campaigns/:id', (req: Request, res: Response) => {
+  const idx = campaigns.findIndex(c => c.id === req.params.id || c.slug === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false, error: 'Campaign not found' });
+  const [deleted] = campaigns.splice(idx, 1);
+  res.json({ success: true, message: 'Deleted', id: deleted.id });
+});
+
+app.post('/api/admin/login', (req: Request, res: Response) => {
+  const { email, password } = req.body;
+  const cleanEmail = (email || '').trim().toLowerCase();
+  if ((cleanEmail.endsWith('@kusanya.com') || ['bright@kusanya.com', 'stephen@kusanya.com', 'billy@kusanya.com'].includes(cleanEmail)) && password === '1234') {
+    return res.json({
+      success: true,
+      admin: {
+        email: cleanEmail,
+        name: cleanEmail.split('@')[0].toUpperCase(),
+        role: 'superadmin'
+      }
+    });
+  }
+  res.status(401).json({ success: false, error: 'Invalid credentials' });
+});
+
 app.get('/api/donations/recent', (req: Request, res: Response) => {
   res.json({
     success: true,

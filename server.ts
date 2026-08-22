@@ -46,7 +46,16 @@ Every single 5,000, 10,000, or 50,000 UGX sent via MTN MoMo or Airtel Money dire
     payoutPhone: '+256 772 458912',
     donorsCount: 142,
     featured: true,
-    createdAt: '2026-08-01T08:00:00Z',
+    createdAt: '2025-08-15T08:00:00Z', // 1 Year Sustained Active Campaign
+    activeDurationMonths: 12,
+    activeDurationDays: 372,
+    lastDonationAt: '2026-08-22T04:15:00Z',
+    recentDonations7d: 19,
+    recentDonations30d: 48,
+    activityScore: 97,
+    spotlightEligible1Year: true,
+    spotlightBadge: '🔥 1-Year Active Spotlight',
+    spotlightReason: 'Maintained active status for over 1 year (372 days) with 142 verified Mobile Money donors and regular hospital updates.',
     daysRemaining: 14,
     status: 'active',
     updates: [
@@ -91,7 +100,16 @@ Local engineers from Gulu University have completed the site survey and voluntee
     payoutPhone: '+256 754 119834',
     donorsCount: 89,
     featured: true,
-    createdAt: '2026-08-04T10:30:00Z',
+    createdAt: '2025-08-20T10:30:00Z', // 1 Year Sustained Active Campaign
+    activeDurationMonths: 12,
+    activeDurationDays: 367,
+    lastDonationAt: '2026-08-21T18:20:00Z',
+    recentDonations7d: 12,
+    recentDonations30d: 31,
+    activityScore: 92,
+    spotlightEligible1Year: true,
+    spotlightBadge: '⚡ 1-Year Sustained Trust',
+    spotlightReason: '12 months of sustained community giving and verified school water project milestones.',
     daysRemaining: 21,
     status: 'active',
     updates: []
@@ -242,7 +260,16 @@ This vehicle will be dedicated 24/7 to emergency obstetric referrals across 6 pa
     payoutPhone: '+256 774 309188',
     donorsCount: 118,
     featured: true,
-    createdAt: '2026-08-02T11:00:00Z',
+    createdAt: '2025-08-10T11:00:00Z', // 1 Year Sustained Active Campaign
+    activeDurationMonths: 12,
+    activeDurationDays: 377,
+    lastDonationAt: '2026-08-22T02:40:00Z',
+    recentDonations7d: 14,
+    recentDonations30d: 38,
+    activityScore: 94,
+    spotlightEligible1Year: true,
+    spotlightBadge: '⚡ 1-Year Active Spotlight',
+    spotlightReason: 'Consistent emergency ambulance fleet funding for 12+ months with 118 MoMo givers.',
     daysRemaining: 12,
     status: 'active',
     updates: []
@@ -282,7 +309,16 @@ We invite all faithful congregants, alumni, diaspora Christians, and well-wisher
     payoutPhone: '+256 772 819034',
     donorsCount: 165,
     featured: true,
-    createdAt: '2026-08-03T07:00:00Z',
+    createdAt: '2025-07-20T07:00:00Z', // 1 Year Sustained Active Campaign
+    activeDurationMonths: 13,
+    activeDurationDays: 398,
+    lastDonationAt: '2026-08-22T05:00:00Z',
+    recentDonations7d: 22,
+    recentDonations30d: 54,
+    activityScore: 98,
+    spotlightEligible1Year: true,
+    spotlightBadge: '🔥 1-Year Top Active Spotlight',
+    spotlightReason: 'Highest active community engagement on Kusanya for 13 months with continuous church choir & youth milestones.',
     daysRemaining: 18,
     status: 'active',
     updates: [
@@ -332,7 +368,16 @@ Your mobile money support directly empowers Ugandan women to build sustainable f
     payoutPhone: '+256 702 449102',
     donorsCount: 134,
     featured: true,
-    createdAt: '2026-08-06T09:30:00Z',
+    createdAt: '2025-08-12T09:30:00Z', // 1 Year Sustained Active Campaign
+    activeDurationMonths: 12,
+    activeDurationDays: 375,
+    lastDonationAt: '2026-08-21T21:10:00Z',
+    recentDonations7d: 16,
+    recentDonations30d: 42,
+    activityScore: 95,
+    spotlightEligible1Year: true,
+    spotlightBadge: '🔥 1-Year Active SACCO Spotlight',
+    spotlightReason: '12 months of transparent revolving loans with 134 active MoMo donors.',
     daysRemaining: 15,
     status: 'active',
     updates: []
@@ -882,6 +927,145 @@ app.post('/api/payouts/request', (req: Request, res: Response) => {
 
   payouts.unshift(payout);
   res.json({ success: true, payout });
+});
+
+// 10. Admin Authentication
+app.post('/api/admin/login', (req: Request, res: Response) => {
+  const { email, password } = req.body;
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const cleanPass = (password || '').trim();
+
+  const isAllowedDomain = cleanEmail.endsWith('@kusanya.com');
+  const isSpecialAdmin = ['bright@kusanya.com', 'stephen@kusanya.com', 'billy@kusanya.com'].includes(cleanEmail);
+
+  if ((isAllowedDomain || isSpecialAdmin) && cleanPass === '1234') {
+    const namePart = cleanEmail.split('@')[0];
+    const capitalized = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+    
+    return res.json({
+      success: true,
+      admin: {
+        email: cleanEmail,
+        name: `${capitalized} (Kusanya Admin)`,
+        role: 'superadmin',
+        token: `kusanya-token-${Date.now()}`
+      }
+    });
+  }
+
+  return res.status(401).json({
+    success: false,
+    error: 'Invalid credentials. Allowed accounts: bright@kusanya.com, stephen@kusanya.com, billy@kusanya.com or any @kusanya.com with password 1234'
+  });
+});
+
+// 11. Update Campaign (Admin or Organizer)
+app.put('/api/campaigns/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const campaignIndex = campaigns.findIndex(c => c.id === id || c.slug === id);
+
+  if (campaignIndex === -1) {
+    return res.status(404).json({ success: false, error: 'Campaign not found' });
+  }
+
+  const current = campaigns[campaignIndex];
+  const updatedCampaign: Campaign = {
+    ...current,
+    ...req.body,
+    id: current.id, // Preserve immutable ID
+    targetAmount: req.body.targetAmount !== undefined ? Number(req.body.targetAmount) : current.targetAmount,
+    raisedAmount: req.body.raisedAmount !== undefined ? Number(req.body.raisedAmount) : current.raisedAmount,
+    featured: req.body.featured !== undefined ? Boolean(req.body.featured) : current.featured,
+    organizerKycVerified: req.body.organizerKycVerified !== undefined ? Boolean(req.body.organizerKycVerified) : current.organizerKycVerified,
+  };
+
+  campaigns[campaignIndex] = updatedCampaign;
+
+  res.json({
+    success: true,
+    campaign: updatedCampaign,
+    message: 'Campaign updated successfully'
+  });
+});
+
+// 12. Delete Campaign (Admin)
+app.delete('/api/campaigns/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const campaignIndex = campaigns.findIndex(c => c.id === id || c.slug === id);
+
+  if (campaignIndex === -1) {
+    return res.status(404).json({ success: false, error: 'Campaign not found' });
+  }
+
+  const deleted = campaigns.splice(campaignIndex, 1)[0];
+
+  res.json({
+    success: true,
+    message: `Campaign "${deleted.title}" deleted successfully`,
+    id: deleted.id
+  });
+});
+
+// 13. Admin Progress, Collections & Financial Analytics
+app.get('/api/admin/analytics', (req: Request, res: Response) => {
+  const totalRaisedUGX = campaigns.reduce((sum, c) => sum + (c.raisedAmount || 0), 0);
+  const totalTargetUGX = campaigns.reduce((sum, c) => sum + (c.targetAmount || 0), 0);
+  const totalDonors = campaigns.reduce((sum, c) => sum + (c.donorsCount || 0), 0);
+  const totalPlatformFeesUGX = Math.round(totalRaisedUGX * 0.05); // 5% platform maintenance fee
+  const totalBeneficiaryFundsUGX = totalRaisedUGX - totalPlatformFeesUGX; // 95% net to causes
+
+  // Category breakdown
+  const categoryStats: Record<string, { count: number; raisedUGX: number }> = {};
+  campaigns.forEach(c => {
+    if (!categoryStats[c.category]) {
+      categoryStats[c.category] = { count: 0, raisedUGX: 0 };
+    }
+    categoryStats[c.category].count += 1;
+    categoryStats[c.category].raisedUGX += c.raisedAmount || 0;
+  });
+
+  // Regional breakdown
+  const regionStats: Record<string, { count: number; raisedUGX: number }> = {};
+  campaigns.forEach(c => {
+    const reg = c.region || 'Central';
+    if (!regionStats[reg]) {
+      regionStats[reg] = { count: 0, raisedUGX: 0 };
+    }
+    regionStats[reg].count += 1;
+    regionStats[reg].raisedUGX += c.raisedAmount || 0;
+  });
+
+  // Payment provider breakdown estimation
+  const providerStats = {
+    mtn: { name: 'MTN Mobile Money (*165#)', totalUGX: Math.round(totalRaisedUGX * 0.58), count: Math.round(totalDonors * 0.56) },
+    airtel: { name: 'Airtel Money (*185#)', totalUGX: Math.round(totalRaisedUGX * 0.32), count: Math.round(totalDonors * 0.34) },
+    visa: { name: 'Visa & Mastercard (3DS)', totalUGX: Math.round(totalRaisedUGX * 0.07), count: Math.round(totalDonors * 0.07) },
+    paypal: { name: 'PayPal (Diaspora)', totalUGX: Math.round(totalRaisedUGX * 0.03), count: Math.round(totalDonors * 0.03) }
+  };
+
+  const allTransactions = Array.from(transactions.values()).slice(0, 50);
+
+  res.json({
+    success: true,
+    analytics: {
+      totalRaisedUGX,
+      totalTargetUGX,
+      totalDonors,
+      totalPlatformFeesUGX,
+      totalBeneficiaryFundsUGX,
+      activeCampaignsCount: campaigns.filter(c => c.status === 'active').length,
+      featuredCampaignsCount: campaigns.filter(c => c.featured).length,
+      completedCampaignsCount: campaigns.filter(c => c.status === 'completed' || c.raisedAmount >= c.targetAmount).length,
+      districtsCoveredCount: Array.from(new Set(campaigns.map(c => c.district))).length,
+      categoryStats,
+      regionStats,
+      providerStats,
+      payoutsCount: payouts.length,
+      totalDisbursedUGX: payouts.reduce((sum, p) => sum + p.amount, 0),
+      recentTransactions: allTransactions,
+      recentPayouts: payouts.slice(0, 20)
+    }
+  });
 });
 
 // Vite Middleware & Static handling
