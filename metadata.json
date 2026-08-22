@@ -1,0 +1,6 @@
+{
+  "name": "Kusanya",
+  "description": "Kusanya (kusanya.org) is Uganda's premier mobile money crowdfunding and community SACCO platform powered by MTN MoMo and Airtel Money for medical, education, churches, SACCOs, and emergency relief.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
