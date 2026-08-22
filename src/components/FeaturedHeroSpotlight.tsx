@@ -31,6 +31,7 @@ import {
 import { Campaign } from '../types';
 import { formatUGX } from '../utils/formatters';
 import { calculateCampaignActivity, sortCampaignsForSpotlight } from '../utils/activity';
+import { KusanyaBrandLogo, KusanyaEmblem } from './KusanyaBrandLogo';
 
 interface FeaturedHeroSpotlightProps {
   campaigns: Campaign[];
@@ -119,124 +120,25 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
   const percentRaised = Math.min(100, Math.round((currentSpotlight.raisedAmount / currentSpotlight.targetAmount) * 100));
 
   return (
-    <section className="bg-gradient-to-b from-amber-50/40 via-white to-slate-50 border-b border-slate-200/80 pt-4 sm:pt-6 pb-8">
+    <section className="bg-gradient-to-b from-slate-50/80 via-white to-slate-50 border-b border-slate-200/80 pt-3 sm:pt-5 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Top Announcement Ribbon */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-amber-200/70 rounded-2xl p-3 sm:px-5 sm:py-3 shadow-sm mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0 border border-amber-500/20">
-              <Sparkles className="w-4 h-4 text-amber-600" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-black uppercase tracking-wider text-amber-800 bg-amber-100/80 px-2.5 py-0.5 rounded-full border border-amber-200">
-                  ⚡ 1-Year Active Spotlight Engine
-                </span>
-                <span className="text-xs text-slate-500 hidden sm:inline">•</span>
-                <span className="text-xs font-semibold text-slate-700">
-                  Ranking top campaigns active & sustained for at least 1 year (365d+) with verified Mobile Money momentum
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-4 text-xs font-bold text-slate-600">
-            <div className="hidden md:flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/60">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>95% Direct Beneficiary Release</span>
-            </div>
-            <button
-              onClick={onStartCampaign}
-              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl font-bold transition-all shadow-sm cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Start a Kusanya</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Hero Header Typography */}
-        <div className="text-center max-w-3xl mx-auto mb-6">
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-3">
-            Fund what matters most in Uganda with <span className="text-emerald-600">Kusanya</span>
-          </h1>
-          <p className="text-sm sm:text-base text-slate-600 font-medium max-w-2xl mx-auto leading-relaxed">
-            Support long-term community projects, medical surgeries, SACCOs, and emergency causes backed by sustained donor trust and Mobile Money verified records.
-          </p>
-        </div>
-
-        {/* 1-Year Spotlight Longevity Controls & Switcher */}
-        <div className="mb-6 bg-slate-900 text-white rounded-2xl p-3 sm:p-4 border border-slate-800 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-400 shrink-0">
-              <Timer className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-widest bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-400/30">
-                  Spotlight Longevity Protocol
-                </span>
-                <span className="text-xs text-slate-400">
-                  {oneYearActiveCandidates.length} causes sustained for ≥ 1 Year (365d+)
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 font-medium mt-0.5">
-                Campaigns earn Spotlight status based on active giving duration and verified organizer milestones.
-              </p>
-            </div>
-          </div>
-
-          {/* Switcher & Tabs */}
-          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-            <button
-              onClick={() => {
-                setSpotlightFilterMode('one-year');
-                setSelectedSpotlightIndex(0);
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-                spotlightFilterMode === 'one-year'
-                  ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-                  : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700'
-              }`}
-            >
-              <Flame className="w-3.5 h-3.5" />
-              <span>1-Year Active Spotlight ({oneYearActiveCandidates.length})</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setSpotlightFilterMode('all');
-                setSelectedSpotlightIndex(0);
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-                spotlightFilterMode === 'all'
-                  ? 'bg-emerald-600 text-white shadow-md font-black'
-                  : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>All Featured ({campaigns.length})</span>
-            </button>
-          </div>
-        </div>
-
         {/* GoFundMe-Style Featured Fundraisers Hero Section */}
-        <div className="mb-10">
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3.5 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse"></div>
               <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                Featured Spotlight Fundraisers
+                Featured Fundraisers
               </h2>
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                Live & Verified
+              </span>
             </div>
             
-            {/* Spotlight Carousel Pager */}
-            {availableSpotlightList.length > 1 && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 font-semibold hidden sm:inline">
-                  Viewing #{selectedSpotlightIndex + 1} of {availableSpotlightList.length} Active Spotlights:
-                </span>
+            {/* Spotlight Controls & Pager */}
+            <div className="flex items-center gap-2">
+              {availableSpotlightList.length > 1 && (
                 <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
                   <button
                     onClick={() => setSelectedSpotlightIndex((prev) => (prev > 0 ? prev - 1 : availableSpotlightList.length - 1))}
@@ -265,8 +167,16 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
-              </div>
-            )}
+              )}
+
+              <button
+                onClick={onStartCampaign}
+                className="hidden sm:flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all shadow-sm cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Start a Fundraiser</span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
@@ -287,8 +197,8 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
                 
                 {/* Top Badges: 1-Year Spotlight & Longevity Indicator */}
                 <div className="absolute top-3 left-3 flex flex-wrap items-center gap-2">
-                  <span className="bg-amber-500 text-slate-950 font-black text-xs px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-md">
-                    <Sparkles className="w-3.5 h-3.5 fill-slate-950" />
+                  <span className="bg-amber-500 text-slate-950 font-black text-xs px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                    <KusanyaEmblem sizeClassName="w-3.5 h-3.5" />
                     {currentStats?.statusBadgeText || 'Top Spotlight'}
                   </span>
 
@@ -386,11 +296,13 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
                 <div>
                   {/* Spotlight Reason Header */}
                   {currentSpotlight.spotlightReason && (
-                    <div className="mb-3 bg-amber-50 border border-amber-200/80 rounded-xl p-2.5 flex items-start gap-2 text-xs text-amber-900">
-                      <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      <div>
-                        <strong className="font-bold text-amber-950">Why this is on Spotlight: </strong>
-                        <span>{currentSpotlight.spotlightReason}</span>
+                    <div className="mb-3 bg-amber-50/90 border border-amber-200/90 rounded-2xl p-3 flex items-start gap-2.5 text-xs text-amber-950 shadow-sm">
+                      <div className="shrink-0 mt-0.5">
+                        <KusanyaEmblem sizeClassName="w-4 h-4" />
+                      </div>
+                      <div className="leading-relaxed">
+                        <strong className="font-extrabold text-amber-950">Why this is on Spotlight: </strong>
+                        <span className="text-amber-900 font-medium">{currentSpotlight.spotlightReason}</span>
                       </div>
                     </div>
                   )}
@@ -539,14 +451,14 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
               {/* Quick Start Card Banner */}
               <div 
                 onClick={onStartCampaign}
-                className="bg-gradient-to-r from-emerald-800 to-slate-900 text-white rounded-2xl p-4 shadow-sm flex items-center justify-between cursor-pointer hover:opacity-95 transition-opacity"
+                className="bg-gradient-to-r from-emerald-900 via-slate-900 to-slate-950 text-white rounded-2xl p-4 shadow-sm flex items-center justify-between cursor-pointer hover:opacity-95 transition-all border border-emerald-800/40 group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-amber-300 shrink-0">
-                    <Sparkles className="w-5 h-5" />
+                  <div className="shrink-0">
+                    <KusanyaBrandLogo size="xs" showText={false} />
                   </div>
                   <div>
-                    <h4 className="text-xs sm:text-sm font-extrabold text-white">
+                    <h4 className="text-xs sm:text-sm font-extrabold text-white group-hover:text-amber-300 transition-colors">
                       Need help raising funds in Uganda?
                     </h4>
                     <p className="text-[11px] text-slate-300">
@@ -554,7 +466,7 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
                     </p>
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
+                <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-white group-hover:translate-x-0.5 transition-all shrink-0" />
               </div>
 
             </div>
