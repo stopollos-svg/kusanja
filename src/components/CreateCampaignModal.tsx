@@ -24,6 +24,7 @@ import {
   X 
 } from 'lucide-react';
 import { Campaign } from '../types';
+import { api } from '../services/api';
 import { formatUGX } from '../utils/formatters';
 
 interface CreateCampaignModalProps {
@@ -211,41 +212,31 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
     setError('');
 
     try {
-      const res = await fetch('/api/campaigns', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: title.trim(),
-          tagline: tagline.trim() || title.trim().slice(0, 80),
-          category,
-          region,
-          district,
-          targetAmount: Number(targetAmount),
-          story: story.trim(),
-          image: causeImages[0] || PRESET_CAUSE_PHOTOS[0].url,
-          images: causeImages.length > 0 ? causeImages : [PRESET_CAUSE_PHOTOS[0].url],
-          beneficiaryName: beneficiaryName.trim() || organizerName.trim(),
-          beneficiaryRelationship: beneficiaryRelationship.trim() || 'Self',
-          beneficiaryPhone: beneficiaryPhone.trim() || organizerPhone.trim(),
-          beneficiaryEmail: beneficiaryEmail.trim(),
-          organizerName: organizerName.trim(),
-          organizerPhone: organizerPhone.trim(),
-          payoutProvider,
-          payoutPhone: payoutPhone.trim() || organizerPhone.trim()
-        })
+      const data = await api.createCampaign({
+        title: title.trim(),
+        tagline: tagline.trim() || title.trim().slice(0, 80),
+        category,
+        region,
+        district,
+        targetAmount: Number(targetAmount),
+        story: story.trim(),
+        image: causeImages[0] || PRESET_CAUSE_PHOTOS[0].url,
+        images: causeImages.length > 0 ? causeImages : [PRESET_CAUSE_PHOTOS[0].url],
+        beneficiaryName: beneficiaryName.trim() || organizerName.trim(),
+        beneficiaryRelationship: beneficiaryRelationship.trim() || 'Self',
+        beneficiaryPhone: beneficiaryPhone.trim() || organizerPhone.trim(),
+        beneficiaryEmail: beneficiaryEmail.trim(),
+        organizerName: organizerName.trim(),
+        organizerPhone: organizerPhone.trim(),
+        payoutProvider,
+        payoutPhone: payoutPhone.trim() || organizerPhone.trim()
       });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
-        throw new Error(errorData?.error || `Server responded with status ${res.status}`);
-      }
-
-      const data = await res.json();
       if (data.success && data.campaign) {
         onCampaignCreated(data.campaign);
         onClose();
       } else {
-        setError(data.error || 'Failed to create campaign');
+        setError('Failed to create campaign');
       }
     } catch (err: any) {
       console.error('Campaign creation error:', err);

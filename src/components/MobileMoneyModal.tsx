@@ -17,6 +17,7 @@ import {
   Zap 
 } from 'lucide-react';
 import { Campaign, PaymentTransaction } from '../types';
+import { api } from '../services/api';
 import { detectUgandanProvider, formatPhoneNumber, formatUGX } from '../utils/formatters';
 import { generateDonationReceiptPDF } from '../utils/pdfReceiptGenerator';
 
@@ -181,29 +182,24 @@ export const MobileMoneyModal: React.FC<MobileMoneyModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('/api/donations/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          campaignId: campaign.id,
-          amount: amountUGX,
-          provider,
-          donorPhone: phoneNumber,
-          donorEmail: donorEmail || (provider === 'paypal' ? paypalEmail : undefined),
-          donorName: isAnonymous ? 'Anonymous' : (donorName || cardHolderName || 'Generous Donor'),
-          message,
-          isAnonymous,
-          cardDetails: provider === 'visa' ? {
-            cardNumber: cardNumber.replace(/\s+/g, ''),
-            cardExpiry,
-            cardHolderName: cardHolderName || donorName || 'Visa Donor',
-            billingCountry
-          } : undefined,
-          paypalEmail: provider === 'paypal' ? (paypalEmail || donorEmail) : undefined
-        })
+      const data = await api.initiateDonation({
+        campaignId: campaign.id,
+        amount: amountUGX,
+        provider,
+        donorPhone: phoneNumber,
+        donorEmail: donorEmail || (provider === 'paypal' ? paypalEmail : undefined),
+        donorName: isAnonymous ? 'Anonymous' : (donorName || cardHolderName || 'Generous Donor'),
+        message,
+        isAnonymous,
+        cardDetails: provider === 'visa' ? {
+          cardNumber: cardNumber.replace(/\s+/g, ''),
+          cardExpiry,
+          cardHolderName: cardHolderName || donorName || 'Visa Donor',
+          billingCountry
+        } : undefined,
+        paypalEmail: provider === 'paypal' ? (paypalEmail || donorEmail) : undefined
       });
 
-      const data = await res.json();
       if (data.success && data.transaction) {
         setTransaction(data.transaction);
         setStep(2);
@@ -255,24 +251,19 @@ export const MobileMoneyModal: React.FC<MobileMoneyModalProps> = ({
     setAuthError('');
 
     try {
-      const res = await fetch('/api/donations/simulate-pin-confirm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reference: transaction.reference,
-          transactionId: transaction.id,
-          pin: authCode || '1234',
-          otp: authCode || '123456'
-        })
+      const data = await api.confirmDonation({
+        reference: transaction.reference,
+        pin: authCode || '1234',
+        otp: authCode || '123456',
+        transaction
       });
 
-      const data = await res.json();
       if (data.success && data.transaction) {
         setTransaction(data.transaction);
         setStep(3);
-        onDonationComplete(data.transaction, data.newRaisedAmount);
+        onDonationComplete(data.transaction, data.newRaisedAmount || (campaign.raisedAmount + data.transaction.amount));
       } else {
-        setAuthError(data.error || 'Authentication failed. Please verify your details.');
+        setAuthError('Authentication failed. Please verify your details.');
       }
     } catch (err) {
       setAuthError('Connection timeout during authorization.');

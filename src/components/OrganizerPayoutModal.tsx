@@ -9,6 +9,7 @@ import {
   X 
 } from 'lucide-react';
 import { Campaign, PayoutRequest } from '../types';
+import { api } from '../services/api';
 import { formatPhoneNumber, formatUGX } from '../utils/formatters';
 
 interface OrganizerPayoutModalProps {
@@ -57,19 +58,14 @@ export const OrganizerPayoutModal: React.FC<OrganizerPayoutModalProps> = ({
     setError('');
 
     try {
-      const res = await fetch('/api/payouts/request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          campaignId: selectedCampaign.id,
-          amount,
-          provider: payoutProvider,
-          phoneNumber: payoutPhone || selectedCampaign.payoutPhone,
-          recipientName: selectedCampaign.organizerName
-        })
+      const data = await api.requestPayout({
+        campaignId: selectedCampaign.id,
+        amount,
+        provider: payoutProvider,
+        phoneNumber: payoutPhone || selectedCampaign.payoutPhone,
+        recipientName: selectedCampaign.organizerName
       });
 
-      const data = await res.json();
       if (data.success && data.payout) {
         setCompletedPayout(data.payout);
       } else {

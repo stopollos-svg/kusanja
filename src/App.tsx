@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Campaign, DonorCheer, PaymentTransaction } from './types';
+import { api } from './services/api';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { CampaignCard } from './components/CampaignCard';
@@ -35,11 +36,10 @@ export default function App() {
   const [totalDonors, setTotalDonors] = useState<number>(529);
   const [districtsCount, setDistrictsCount] = useState<number>(14);
 
-  // Fetch campaigns from backend
+  // Fetch campaigns from backend / local resilient fallback
   const fetchCampaigns = async () => {
     try {
-      const res = await fetch('/api/campaigns');
-      const data = await res.json();
+      const data = await api.getCampaigns();
       if (data.success && data.campaigns) {
         setCampaigns(data.campaigns);
       }
@@ -51,8 +51,7 @@ export default function App() {
   // Fetch recent donations and stats
   const fetchRecentFeed = async () => {
     try {
-      const res = await fetch('/api/donations/recent');
-      const data = await res.json();
+      const data = await api.getRecentDonations();
       if (data.success) {
         setRecentDonations(data.donations || []);
         if (data.stats) {
@@ -136,12 +135,7 @@ export default function App() {
   // Post organizer update
   const handlePostUpdate = async (campaignId: string, title: string, content: string) => {
     try {
-      const res = await fetch(`/api/campaigns/${campaignId}/updates`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content }),
-      });
-      const data = await res.json();
+      const data = await api.postUpdate(campaignId, title, content);
       if (data.success && data.update) {
         setCampaigns((prev) =>
           prev.map((c) => {
