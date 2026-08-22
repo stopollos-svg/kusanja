@@ -1,6 +1,8 @@
 import React from 'react';
 import { 
   CheckCircle2, 
+  CreditCard, 
+  Globe, 
   HelpCircle, 
   Lock, 
   Server, 
@@ -18,75 +20,101 @@ export const PaymentGatewayInfoModal: React.FC<PaymentGatewayInfoModalProps> = (
   onClose,
 }) => {
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div 
-        className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-2xl bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 my-0 sm:my-6 max-h-[94vh] sm:max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Mobile drag handle indicator */}
+        <div className="sm:hidden w-full flex items-center justify-center pt-2.5 pb-1 bg-slate-900">
+          <div className="w-12 h-1 bg-slate-700 rounded-full"></div>
+        </div>
         
         {/* Header */}
-        <div className="bg-slate-900 text-white p-5 flex items-center justify-between border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center">
-              <Smartphone className="w-4 h-4 text-white" />
+        <div className="bg-slate-900 text-white p-4 sm:p-5 flex items-center justify-between border-b border-slate-800 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center shadow-sm">
+              <ShieldCheck className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-base">Secure Mobile Money Payment Gateway</h3>
-              <p className="text-xs text-slate-400">MTN MoMo (*165#) & Airtel Money (*185#) Integration Architecture</p>
+              <h3 className="font-bold text-sm sm:text-base leading-tight">Payment Infrastructure</h3>
+              <p className="text-xs text-slate-400">MTN MoMo, Airtel Money, Visa & PayPal</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer active:scale-95"
+            aria-label="Close modal"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-5 text-slate-800 text-xs sm:text-sm leading-relaxed">
+        <div className="p-4 sm:p-6 space-y-5 text-slate-800 text-xs sm:text-sm leading-relaxed overflow-y-auto flex-1">
           
-          {/* Section 1: How It Works */}
+          {/* Section 1: How Payments Work */}
           <div className="space-y-2">
             <h4 className="font-bold text-slate-950 uppercase tracking-wider text-xs flex items-center gap-1.5">
               <Zap className="w-4 h-4 text-emerald-600" />
-              <span>1. Real-Time USSD Push Flow</span>
+              <span>1. Supported Payment Channels</span>
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-slate-600">
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                <span className="font-bold text-slate-900 block mb-1">Step 1: Enter Phone</span>
-                <p className="text-xs">Provide your MTN (077/078) or Airtel (070/075) number with desired UGX amount.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-yellow-50/70 border border-yellow-200 rounded-xl p-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="bg-yellow-400 text-slate-900 text-[10px] font-black px-1.5 py-0.5 rounded">MTN</span>
+                  <span className="font-bold text-slate-900">MTN MoMo (*165#)</span>
+                </div>
+                <p className="text-xs text-slate-700">
+                  Instant collections across Uganda with *165# automated push prompts directly to the donor's mobile handset.
+                </p>
               </div>
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                <span className="font-bold text-slate-900 block mb-1">Step 2: Enter PIN</span>
-                <p className="text-xs">Your telecom pushes an automated USSD prompt to your screen to enter your secret PIN.</p>
+
+              <div className="bg-red-50/70 border border-red-200 rounded-xl p-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="bg-red-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded">AIR</span>
+                  <span className="font-bold text-slate-900">Airtel Money (*185#)</span>
+                </div>
+                <p className="text-xs text-slate-700">
+                  Direct Airtel Africa Money integration with instant *185# push prompt authorization and instant verification.
+                </p>
               </div>
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                <span className="font-bold text-slate-900 block mb-1">Step 3: Live Receipt</span>
-                <p className="text-xs">Gateway webhooks credit the fundraiser instantly and issue a verifiable receipt.</p>
+
+              <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="bg-blue-700 text-white text-[10px] font-black px-1.5 py-0.5 rounded">VISA</span>
+                  <span className="font-bold text-slate-900">Visa & Debit Cards</span>
+                </div>
+                <p className="text-xs text-slate-700">
+                  Global diaspora support for all Visa and Mastercard debit/credit cards with 3D-Secure 2.0 bank authentication.
+                </p>
+              </div>
+
+              <div className="bg-sky-50/70 border border-sky-200 rounded-xl p-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="bg-sky-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded">PP</span>
+                  <span className="font-bold text-slate-900">PayPal Instant Giving</span>
+                </div>
+                <p className="text-xs text-slate-700">
+                  Allows international donors and diaspora members across North America, Europe, and the Middle East to donate in 1 click.
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Section 2: Telecom Integrations */}
+          {/* Section 2: Transparent 5% Maintenance Fee */}
           <div className="space-y-2 pt-2 border-t border-slate-200">
             <h4 className="font-bold text-slate-950 uppercase tracking-wider text-xs flex items-center gap-1.5">
-              <Server className="w-4 h-4 text-emerald-600" />
-              <span>2. Supported Ugandan Telecoms & Banks</span>
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>2. Transparent 5% Maintenance & Telecom Fee</span>
             </h4>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-yellow-50/80 border border-yellow-200 rounded-xl p-3">
-                <span className="font-bold text-slate-900 block mb-1">MTN Mobile Money (Uganda)</span>
-                <p className="text-xs text-slate-700">
-                  Full MTN MoMo API collections & automated B2C bulk disbursements with *165# USSD callback.
-                </p>
-              </div>
-              <div className="bg-red-50/80 border border-red-200 rounded-xl p-3">
-                <span className="font-bold text-slate-900 block mb-1">Airtel Money (Uganda)</span>
-                <p className="text-xs text-slate-700">
-                  Direct Airtel Africa Money Merchant collection with instant *185# authorization & SMS notifications.
-                </p>
-              </div>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 space-y-1.5 text-xs text-emerald-950">
+              <p>
+                <strong>95% of every donation goes directly to the beneficiary</strong> or verified cause organizer.
+              </p>
+              <p className="text-emerald-800">
+                A transparent 5% platform maintenance fee is deducted automatically at transaction time to cover telecom SMS gateway notifications, USSD push network charges, server hosting, and security audits.
+              </p>
             </div>
           </div>
 

@@ -83,26 +83,31 @@ export const OrganizerPayoutModal: React.FC<OrganizerPayoutModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div 
-        className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-xl bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 max-h-[94vh] sm:max-h-[90vh] flex flex-col my-0 sm:my-6"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Mobile drag handle indicator */}
+        <div className="sm:hidden w-full flex items-center justify-center pt-2.5 pb-1 bg-slate-900">
+          <div className="w-12 h-1 bg-slate-700 rounded-full"></div>
+        </div>
         
         {/* Header */}
-        <div className="bg-slate-900 text-white p-4 sm:p-5 flex items-center justify-between border-b border-slate-800">
+        <div className="bg-slate-900 text-white p-4 sm:p-5 flex items-center justify-between border-b border-slate-800 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center shadow-sm">
               <Wallet className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-sm sm:text-base">Organizer Mobile Money Disbursement</h3>
-              <p className="text-xs text-slate-400">Withdraw raised funds to registered MTN or Airtel lines</p>
+              <h3 className="font-bold text-sm sm:text-base">Organizer Disbursement</h3>
+              <p className="text-xs text-slate-400">Withdraw to registered MTN or Airtel MoMo</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer active:scale-95"
+            aria-label="Close modal"
           >
             <X className="w-4 h-4" />
           </button>
@@ -115,7 +120,7 @@ export const OrganizerPayoutModal: React.FC<OrganizerPayoutModalProps> = ({
           </div>
         )}
 
-        <div className="p-5 sm:p-6">
+        <div className="p-5 sm:p-6 overflow-y-auto flex-1">
           
           {completedPayout ? (
             <div className="text-center space-y-4">

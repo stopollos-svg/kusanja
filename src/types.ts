@@ -1,4 +1,4 @@
-export type MoMoProvider = 'mtn' | 'airtel' | 'card';
+export type MoMoProvider = 'mtn' | 'airtel' | 'visa' | 'paypal' | 'card';
 
 export interface CampaignUpdate {
   id: string;
@@ -34,8 +34,11 @@ export interface Campaign {
   currency: string; // 'UGX'
   story: string;
   image: string;
+  images?: string[]; // Multiple pictures showing the cause
   beneficiaryName: string;
   beneficiaryRelationship: string;
+  beneficiaryPhone?: string;
+  beneficiaryEmail?: string;
   organizerName: string;
   organizerPhone: string;
   organizerKycVerified: boolean;
@@ -60,17 +63,25 @@ export interface PaymentInitiationRequest {
 }
 
 export interface PaymentTransaction {
+  id?: string;
   reference: string;
+  transactionRef?: string;
   campaignId: string;
   donorName: string;
   donorPhone: string;
+  phoneNumber?: string;
   amount: number;
+  platformFee: number; // 5% platform maintenance fee
+  feePercentage: number; // 5
+  netBeneficiaryAmount: number; // 95% to cause
   provider: MoMoProvider;
   isAnonymous: boolean;
   message?: string;
   status: 'pending' | 'ussd_sent' | 'processing' | 'completed' | 'failed';
   ussdPrompt: string;
+  ussdPromptText?: string;
   networkRef: string;
+  networkTransactionId?: string;
   createdAt: string;
   completedAt?: string;
   receiptNumber: string;

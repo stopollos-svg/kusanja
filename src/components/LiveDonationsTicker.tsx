@@ -38,7 +38,13 @@ export const LiveDonationsTicker: React.FC<LiveDonationsTickerProps> = ({
         {/* Animated Donor Item */}
         <div className="flex-1 truncate flex items-center gap-2">
           <span className={`inline-block w-2 h-2 rounded-full ${
-            current.provider === 'mtn' ? 'bg-yellow-400' : 'bg-red-500'
+            current.provider === 'mtn' 
+              ? 'bg-yellow-400' 
+              : current.provider === 'airtel' 
+              ? 'bg-red-500' 
+              : current.provider === 'visa' || current.provider === 'card'
+              ? 'bg-blue-500'
+              : 'bg-sky-400'
           }`}></span>
           <span className="font-bold text-white">
             {current.isAnonymous ? 'An Anonymous Giver' : current.donorName}
@@ -48,7 +54,7 @@ export const LiveDonationsTicker: React.FC<LiveDonationsTickerProps> = ({
             {formatUGX(current.amount)}
           </span>
           <span className="text-slate-400 hidden sm:inline">
-            via {current.provider.toUpperCase()} Mobile Money
+            via {current.provider === 'visa' || current.provider === 'card' ? 'Visa Card' : current.provider === 'paypal' ? 'PayPal' : `${current.provider.toUpperCase()} MoMo`}
           </span>
           {current.message && (
             <span className="text-slate-400 italic hidden md:inline truncate max-w-xs">

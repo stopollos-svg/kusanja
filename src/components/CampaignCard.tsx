@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, CheckCircle2, Heart, MapPin, Smartphone, Users } from 'lucide-react';
+import { Calendar, CheckCircle2, Heart, MapPin, Phone, Smartphone, Users } from 'lucide-react';
 import { Campaign } from '../types';
 import { formatUGX } from '../utils/formatters';
 
@@ -15,6 +15,7 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
   onDonate,
 }) => {
   const percentage = Math.min(100, Math.round((campaign.raisedAmount / campaign.targetAmount) * 100));
+  const contactNum = campaign.beneficiaryPhone || campaign.organizerPhone;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col group overflow-hidden">
@@ -79,9 +80,27 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
           </h3>
 
           {/* Tagline */}
-          <p className="text-xs sm:text-sm text-slate-600 line-clamp-2 leading-relaxed mb-4">
+          <p className="text-xs sm:text-sm text-slate-600 line-clamp-2 leading-relaxed mb-3">
             {campaign.tagline || campaign.story.slice(0, 100) + '...'}
           </p>
+
+          {/* Beneficiary & Direct Contact Tag */}
+          <div className="flex items-center justify-between text-[11px] text-slate-500 mb-4 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100">
+            <span className="truncate">
+              For: <strong className="text-slate-800 font-semibold">{campaign.beneficiaryName}</strong>
+            </span>
+            {contactNum && (
+              <a 
+                href={`tel:${contactNum.replace(/\s+/g, '')}`}
+                onClick={(e) => e.stopPropagation()}
+                className="shrink-0 flex items-center gap-1 text-emerald-700 hover:text-emerald-800 font-bold ml-2 bg-emerald-100/70 hover:bg-emerald-100 px-2 py-0.5 rounded-md transition-colors"
+                title="Direct call"
+              >
+                <Phone className="w-3 h-3 text-emerald-600" />
+                <span>{contactNum}</span>
+              </a>
+            )}
+          </div>
         </div>
 
         {/* Progress Bar & Financials */}

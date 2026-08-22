@@ -73,15 +73,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </span>
             <span className="text-slate-200">Kusanya.org — Crowdfunding, Churches & SACCOs</span>
             <span className="text-slate-500">•</span>
-            <span className="text-emerald-400 font-bold">MTN MoMo & Airtel Money</span>
+            <span className="text-emerald-400 font-bold">MoMo, Visa & PayPal</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight mb-4">
-            Empower Communities, Churches & SACCOs Across Uganda with <span className="text-emerald-400">Direct Mobile Money</span>
+            Empower Communities, Churches & SACCOs Across Uganda with <span className="text-emerald-400">Mobile Money, Visa & PayPal</span>
           </h1>
 
           <p className="text-slate-300 text-sm sm:text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-6">
-            Mobilize funds or donate instantly in <strong>Ugandan Shillings (UGX)</strong> to verified church projects, SACCO group savings, medical emergencies, and tuition with real-time fund tracking.
+            Mobilize funds or donate instantly from Uganda or the global diaspora to verified church projects, SACCO savings, medical emergencies, and tuition with 100% transparent 5% platform maintenance.
           </p>
 
           {/* CTAs */}
@@ -99,15 +99,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               className="flex items-center gap-2 px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold rounded-full active:scale-95 transition-all text-sm cursor-pointer"
             >
               <Smartphone className="w-4 h-4 text-emerald-400" />
-              <span>How MoMo Checkout Works</span>
+              <span>Payment Gateway & 5% Fee Info</span>
             </button>
           </div>
 
           {/* Trust badges */}
-          <div className="flex flex-wrap items-center justify-center gap-6 mt-6 text-xs text-slate-400">
+          <div className="flex flex-wrap items-center justify-center gap-5 mt-6 text-xs text-slate-400">
             <div className="flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>100% Verified Beneficiaries</span>
+              <span>Verified Causes</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
@@ -118,8 +118,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <span>Airtel Money (*185#)</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <HelpCircle className="w-4 h-4 text-slate-400" />
-              <span>Instant Donor SMS & Receipt</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+              <span>Visa / Cards</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
+              <span>PayPal Global</span>
             </div>
           </div>
         </div>
@@ -171,20 +175,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
         {/* Category Filters Bar */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <span className="text-xs uppercase tracking-wider font-bold text-slate-400">
               Browse by Cause
             </span>
 
             {/* Region Filter */}
-            <div className="flex items-center gap-1 text-xs">
-              <span className="text-slate-400 hidden sm:inline">Region:</span>
-              <div className="inline-flex bg-slate-800 p-0.5 rounded-lg border border-slate-700">
+            <div className="flex items-center gap-1.5 text-xs overflow-x-auto pb-1 scrollbar-none">
+              <span className="text-slate-400 text-xs shrink-0">Region:</span>
+              <div className="inline-flex bg-slate-800 p-0.5 rounded-lg border border-slate-700 shrink-0">
                 {REGIONS.map((reg) => (
                   <button
                     key={reg}
                     onClick={() => onSelectRegion(reg)}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all active:scale-95 cursor-pointer whitespace-nowrap ${
                       selectedRegion === reg
                         ? 'bg-emerald-600 text-white font-bold shadow-sm'
                         : 'text-slate-400 hover:text-white'
@@ -197,7 +201,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 touch-pan-x">
             {CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               const isSelected = selectedCategory === cat.id;
@@ -205,7 +209,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <button
                   key={cat.id}
                   onClick={() => onSelectCategory(cat.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border ${
+                  className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer border shrink-0 ${
                     isSelected
                       ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/30'
                       : 'bg-slate-800/90 text-slate-300 border-slate-700 hover:border-slate-500 hover:bg-slate-700'

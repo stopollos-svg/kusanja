@@ -9,6 +9,7 @@ import { CreateCampaignModal } from './components/CreateCampaignModal';
 import { LiveDonationsTicker } from './components/LiveDonationsTicker';
 import { OrganizerPayoutModal } from './components/OrganizerPayoutModal';
 import { PaymentGatewayInfoModal } from './components/PaymentGatewayInfoModal';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { Footer } from './components/Footer';
 import { Heart, RefreshCw, Search, ShieldCheck, Sparkles } from 'lucide-react';
 
@@ -162,7 +163,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-emerald-500 selection:text-white font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-emerald-500 selection:text-white font-sans pb-16 md:pb-0">
       
       {/* Top Navigation */}
       <Navbar
@@ -329,6 +330,19 @@ export default function App() {
         onOpenGatewayInfo={() => setIsGatewayInfoOpen(true)}
         onOpenPayouts={() => setIsPayoutModalOpen(true)}
         onSelectDistrict={(d) => setSearchQuery(d)}
+      />
+
+      {/* Mobile Fixed Bottom Navigation Bar */}
+      <MobileBottomNav
+        onExplore={() => {
+          setSelectedCategory('all');
+          setSelectedRegion('all');
+          setSearchQuery('');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onStartCampaign={() => setIsCreatingCampaign(true)}
+        onOpenPayouts={() => setIsPayoutModalOpen(true)}
+        onOpenGatewayInfo={() => setIsGatewayInfoOpen(true)}
       />
 
     </div>

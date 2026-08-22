@@ -36,12 +36,18 @@ export const Footer: React.FC<FooterProps> = ({
             <p className="text-slate-400 leading-relaxed text-xs">
               Uganda’s premier mobile money crowdfunding and community SACCO platform, powering verified medical, church ministry, SACCO revolving fund, and community causes across all 135+ districts.
             </p>
-            <div className="flex items-center gap-2 pt-1 text-[11px] text-slate-400">
+            <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-slate-400">
               <span className="w-2 h-2 rounded-full bg-yellow-400"></span>
-              <span>MTN MoMo (*165#)</span>
+              <span>MTN MoMo</span>
               <span>•</span>
               <span className="w-2 h-2 rounded-full bg-red-500"></span>
-              <span>Airtel Money (*185#)</span>
+              <span>Airtel Money</span>
+              <span>•</span>
+              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+              <span>Visa Card</span>
+              <span>•</span>
+              <span className="w-2 h-2 rounded-full bg-sky-400"></span>
+              <span>PayPal</span>
             </div>
           </div>
 

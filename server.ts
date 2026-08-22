@@ -1,13 +1,13 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI } from '@google/genai';
-import { Campaign, DonorCheer, PaymentTransaction, PayoutRequest } from './src/types';
+import { Campaign, DonorCheer, MoMoProvider, PaymentTransaction, PayoutRequest } from './src/types';
 
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // In-memory Database with persistent seed data
 const initialCampaigns: Campaign[] = [
@@ -30,8 +30,15 @@ The total cost of surgical consumables, pediatric ICU care, and post-operative m
 
 Every single 5,000, 10,000, or 50,000 UGX sent via MTN MoMo or Airtel Money directly pays the hospital admission and surgical consumable invoice. May God bless your generous giving (Webale nnyo!).`,
     image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=1200&q=80'
+    ],
     beneficiaryName: 'Trevor Sserwadda',
     beneficiaryRelationship: 'Son of organizer',
+    beneficiaryPhone: '+256 772 458912',
     organizerName: 'Sarah Nalubega',
     organizerPhone: '+256 772 458912',
     organizerKycVerified: true,
@@ -69,8 +76,14 @@ We are raising funds to install a heavy-duty solar-powered borehole pump, 10,000
 
 Local engineers from Gulu University have completed the site survey and volunteered to oversee installation free of labor charges. We only need funds for the solar panels, submersible pump, steel tank stand, and PVC piping.`,
     image: 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1594398901394-4e34939a4fd0?auto=format&fit=crop&w=1200&q=80'
+    ],
     beneficiaryName: 'Paicho Primary School Pupils',
     beneficiaryRelationship: 'Headteacher & PTA Board',
+    beneficiaryPhone: '+256 754 119834',
     organizerName: 'Okello Denis',
     organizerPhone: '+256 754 119834',
     organizerKycVerified: true,
@@ -100,8 +113,14 @@ I come from a humble farming background in Lira District. Throughout my 4 years,
 
 Final examinations commence in three weeks. Graduating will enable me to start my engineering internship and support my four younger siblings' education. Apwoyo matek (Thank you very much) for standing with me!`,
     image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1532012164546-f432f2e3edd4?auto=format&fit=crop&w=1200&q=80'
+    ],
     beneficiaryName: 'Grace Atim',
     beneficiaryRelationship: 'Self (Student)',
+    beneficiaryPhone: '+256 779 883201',
     organizerName: 'Grace Atim',
     organizerPhone: '+256 779 883201',
     organizerKycVerified: true,
@@ -134,8 +153,14 @@ Families are currently sheltering in a local church hall with limited access to 
 
 All mobile money funds raised here are disbursed directly under the supervision of LC3 Chairperson and Jinja Disaster Response Committee.`,
     image: 'https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=1200&q=80'
+    ],
     beneficiaryName: 'Budondo Flood Victims',
     beneficiaryRelationship: 'Community Action Committee',
+    beneficiaryPhone: '+256 701 554320',
     organizerName: 'Mugerwa Emmanuel (LC3 Secretary)',
     organizerPhone: '+256 701 554320',
     organizerKycVerified: true,
@@ -165,8 +190,14 @@ With our own motorized eco-pulper and drying beds, our youth cooperative can pro
 
 We have already contributed 30% from our collective savings. This campaign will bridge the remaining cost to purchase the eco-pulper from a verified supplier in Kampala.`,
     image: 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1200&q=80'
+    ],
     beneficiaryName: 'Wanale Youth Coffee Cooperative',
     beneficiaryRelationship: 'Cooperative Chairperson',
+    beneficiaryPhone: '+256 788 903211',
     organizerName: 'Wepukhulu Isaac',
     organizerPhone: '+256 788 903211',
     organizerKycVerified: true,
@@ -196,8 +227,14 @@ Boda-boda transport during labor carries high risks of maternal and neonatal mor
 
 This vehicle will be dedicated 24/7 to emergency obstetric referrals across 6 parish clinics, serving over 28,000 residents.`,
     image: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1587745416684-47953f16f02f?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?auto=format&fit=crop&w=1200&q=80'
+    ],
     beneficiaryName: 'Expectant Mothers of Kashari North',
     beneficiaryRelationship: 'Clinic Medical Director',
+    beneficiaryPhone: '+256 774 309188',
     organizerName: 'Dr. Tumusiime Brian',
     organizerPhone: '+256 774 309188',
     organizerKycVerified: true,
@@ -230,8 +267,14 @@ Due to roof water leakages and aging electrical wiring, the youth ministry hall 
 
 We invite all faithful congregants, alumni, diaspora Christians, and well-wishers to contribute tithes, offerings, and pledges via MTN MoMo and Airtel Money directly on Kusanya.org. Mukama Akuwe Omukisa (May the Lord bless you abundantly!).`,
     image: 'https://images.unsplash.com/photo-1548625361-195972844e13?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1548625361-195972844e13?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1519817650390-64a93db51149?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1200&q=80'
+    ],
     beneficiaryName: 'Namirembe Cathedral Youth Ministry',
     beneficiaryRelationship: 'Diocese Youth Pastor & Guild Committee',
+    beneficiaryPhone: '+256 772 819034',
     organizerName: 'Rev. Canon Peter Musisi',
     organizerPhone: '+256 772 819034',
     organizerKycVerified: true,
@@ -274,8 +317,14 @@ How the SACCO Fund Operates:
 
 Your mobile money support directly empowers Ugandan women to build sustainable family wealth and business resilience.`,
     image: 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1200&q=80'
+    ],
     beneficiaryName: 'Kasubi Market Women Twegatte SACCO',
     beneficiaryRelationship: 'SACCO Board Executive Committee',
+    beneficiaryPhone: '+256 702 449102',
     organizerName: 'Hajjati Mariam Nabatanzi (SACCO Chairperson)',
     organizerPhone: '+256 702 449102',
     organizerKycVerified: true,
@@ -305,8 +354,14 @@ Our SACCO has partnered with a Ugandan electric vehicle assembler in Namanve to 
 
 This campaign provides matching group equity to clear the initial 25% down-payment per electric bike and purchase 100 certified safety helmets with reflective night gear for every rider. By contributing through Kusanya, you help keep youth in safe, profitable employment while decarbonizing public transport in Jinja.`,
     image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1508974239320-0a029497e820?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=1200&q=80'
+    ],
     beneficiaryName: 'Jinja Central Boda SACCO Members',
     beneficiaryRelationship: 'Cooperative Board & Safety Officer',
+    beneficiaryPhone: '+256 775 901452',
     organizerName: 'Waiswa Godfrey',
     organizerPhone: '+256 775 901452',
     organizerKycVerified: true,
@@ -338,8 +393,14 @@ We are fundraising to:
 
 Every contribution sent via MTN MoMo and Airtel Money directly empowers the church community. Webale nnyo okutuwaayo!`,
     image: 'https://images.unsplash.com/photo-1519817650390-64a93db51149?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1519817650390-64a93db51149?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=1200&q=80'
+    ],
     beneficiaryName: 'St. Luke Church Youth Choir',
     beneficiaryRelationship: 'Parish Lay Reader & Choir Director',
+    beneficiaryPhone: '+256 756 220911',
     organizerName: 'Kibirige Daniel',
     organizerPhone: '+256 756 220911',
     organizerKycVerified: true,
@@ -490,8 +551,11 @@ app.post('/api/campaigns', (req: Request, res: Response) => {
     targetAmount,
     story,
     image,
+    images,
     beneficiaryName,
     beneficiaryRelationship,
+    beneficiaryPhone,
+    beneficiaryEmail,
     organizerName,
     organizerPhone,
     payoutProvider,
@@ -507,6 +571,9 @@ app.post('/api/campaigns', (req: Request, res: Response) => {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '') + '-' + Math.floor(1000 + Math.random() * 9000);
 
+  const primaryImage = image || (images && images.length > 0 ? images[0] : 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb9?auto=format&fit=crop&w=1200&q=80');
+  const allImages = Array.isArray(images) && images.length > 0 ? images : [primaryImage];
+
   const newCampaign: Campaign = {
     id: `ug-camp-${Date.now().toString().slice(-6)}`,
     title,
@@ -519,9 +586,12 @@ app.post('/api/campaigns', (req: Request, res: Response) => {
     raisedAmount: 0,
     currency: 'UGX',
     story,
-    image: image || 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb9?auto=format&fit=crop&w=1200&q=80',
+    image: primaryImage,
+    images: allImages,
     beneficiaryName: beneficiaryName || organizerName,
     beneficiaryRelationship: beneficiaryRelationship || 'Self',
+    beneficiaryPhone: beneficiaryPhone || organizerPhone,
+    beneficiaryEmail: beneficiaryEmail || '',
     organizerName,
     organizerPhone,
     organizerKycVerified: true, // Initial level 1 phone KYC
@@ -563,9 +633,20 @@ app.post('/api/campaigns/:id/updates', (req: Request, res: Response) => {
   res.json({ success: true, update });
 });
 
-// 5. Mobile Money Donation Initiation
+// 5. Donation Initiation (MTN MoMo, Airtel Money, Visa Card & PayPal with 5% Platform Maintenance Fee)
 app.post('/api/donations/initiate', (req: Request, res: Response) => {
-  const { campaignId, donorName, donorPhone, amount, provider, isAnonymous, message } = req.body;
+  const { 
+    campaignId, 
+    donorName, 
+    donorPhone, 
+    donorEmail,
+    amount, 
+    provider, 
+    isAnonymous, 
+    message,
+    cardDetails,
+    paypalEmail
+  } = req.body;
 
   const campaign = campaigns.find(c => c.id === campaignId);
   if (!campaign) {
@@ -577,37 +658,75 @@ app.post('/api/donations/initiate', (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'Minimum donation is UGX 500' });
   }
 
-  // Determine provider by phone prefix if needed
-  let resolvedProvider = provider || 'mtn';
-  const cleanPhone = (donorPhone || '').replace(/[^0-9]/g, '');
-  if (cleanPhone.startsWith('25670') || cleanPhone.startsWith('25675') || cleanPhone.startsWith('25674') || cleanPhone.startsWith('070') || cleanPhone.startsWith('075') || cleanPhone.startsWith('074')) {
-    resolvedProvider = 'airtel';
-  } else if (cleanPhone.startsWith('25677') || cleanPhone.startsWith('25678') || cleanPhone.startsWith('25676') || cleanPhone.startsWith('077') || cleanPhone.startsWith('078') || cleanPhone.startsWith('076')) {
-    resolvedProvider = 'mtn';
+  // Calculate 5% platform maintenance fee
+  const feePercentage = 5;
+  const platformFee = Math.round(parsedAmount * 0.05);
+  const netBeneficiaryAmount = parsedAmount - platformFee;
+
+  let resolvedProvider: MoMoProvider = provider || 'mtn';
+
+  // Only auto-resolve by phone if provider is default or momo-like
+  if (resolvedProvider === 'mtn' || resolvedProvider === 'airtel') {
+    const cleanPhone = (donorPhone || '').replace(/[^0-9]/g, '');
+    if (cleanPhone.startsWith('25670') || cleanPhone.startsWith('25675') || cleanPhone.startsWith('25674') || cleanPhone.startsWith('070') || cleanPhone.startsWith('075') || cleanPhone.startsWith('074')) {
+      resolvedProvider = 'airtel';
+    } else if (cleanPhone.startsWith('25677') || cleanPhone.startsWith('25678') || cleanPhone.startsWith('25676') || cleanPhone.startsWith('077') || cleanPhone.startsWith('078') || cleanPhone.startsWith('076')) {
+      resolvedProvider = 'mtn';
+    }
   }
 
-  const prefix = resolvedProvider === 'airtel' ? 'AM-UG' : resolvedProvider === 'card' ? 'CARD-UG' : 'MOMO-UG';
+  let prefix = 'MOMO-UG';
+  if (resolvedProvider === 'airtel') prefix = 'AM-UG';
+  else if (resolvedProvider === 'visa' || resolvedProvider === 'card') prefix = 'VISA-UG';
+  else if (resolvedProvider === 'paypal') prefix = 'PP-INT';
+
   const refNumber = Math.floor(100000 + Math.random() * 900000);
   const reference = `${prefix}-${Date.now().toString().slice(-4)}${refNumber}`;
   const networkRef = `NW-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
   const receiptNumber = `RCP-UGX-${Math.floor(1000000 + Math.random() * 9000000)}`;
 
-  const ussdPrompt = resolvedProvider === 'airtel'
-    ? `*185*9# (Authorize payment of UGX ${parsedAmount.toLocaleString()} to KUSANYA.ORG ref ${reference})`
-    : `*165*3# (MTN MoMo: Pay UGX ${parsedAmount.toLocaleString()} to Kusanya)`;
+  let ussdPrompt = '';
+  let promptText = '';
+  let ussdManualCode = '';
+
+  if (resolvedProvider === 'airtel') {
+    ussdPrompt = `*185*9# (Authorize payment of UGX ${parsedAmount.toLocaleString()} to KUSANYA.ORG ref ${reference})`;
+    promptText = `A push prompt has been sent to ${donorPhone}. Please check your phone screen and enter your Airtel Money PIN to authorize UGX ${parsedAmount.toLocaleString()}.`;
+    ussdManualCode = `*185#`;
+  } else if (resolvedProvider === 'mtn') {
+    ussdPrompt = `*165*3# (MTN MoMo: Pay UGX ${parsedAmount.toLocaleString()} to Kusanya)`;
+    promptText = `A push prompt has been sent to ${donorPhone}. Please check your phone screen and enter your MTN MoMo PIN to authorize UGX ${parsedAmount.toLocaleString()}.`;
+    ussdManualCode = `*165#`;
+  } else if (resolvedProvider === 'visa' || resolvedProvider === 'card') {
+    ussdPrompt = `3DS-VERIFIED: Visa Secure Gateway verification for card ending in ${cardDetails?.cardNumber ? cardDetails.cardNumber.slice(-4) : '4242'}`;
+    promptText = `Visa 3D-Secure 2.0 gateway initialized. A one-time verification code (OTP) has been sent by your issuing bank.`;
+    ussdManualCode = `VISA 3D-SECURE`;
+  } else if (resolvedProvider === 'paypal') {
+    ussdPrompt = `PAYPAL-CHECKOUT: PayPal Express order authorized for ${paypalEmail || donorEmail || 'Diaspora Donor'}`;
+    promptText = `PayPal secure checkout initialized. Confirm to capture payment directly through PayPal.`;
+    ussdManualCode = `PAYPAL 1-CLICK`;
+  }
 
   const tx: PaymentTransaction = {
+    id: reference,
     reference,
+    transactionRef: reference,
     campaignId,
-    donorName: donorName || 'Kind Giver',
+    donorName: donorName || (isAnonymous ? 'Anonymous Well-Wisher' : 'Kind Giver'),
     donorPhone: donorPhone || '',
+    phoneNumber: donorPhone || '',
     amount: parsedAmount,
+    platformFee,
+    feePercentage,
+    netBeneficiaryAmount,
     provider: resolvedProvider,
     isAnonymous: !!isAnonymous,
     message: message || '',
-    status: 'ussd_sent',
+    status: (resolvedProvider === 'visa' || resolvedProvider === 'paypal' || resolvedProvider === 'card') ? 'processing' : 'ussd_sent',
     ussdPrompt,
+    ussdPromptText: promptText,
     networkRef,
+    networkTransactionId: networkRef,
     createdAt: new Date().toISOString(),
     receiptNumber
   };
@@ -620,30 +739,41 @@ app.post('/api/donations/initiate', (req: Request, res: Response) => {
     instructions: {
       provider: resolvedProvider,
       phone: donorPhone,
-      promptText: `A push prompt has been sent to ${donorPhone}. Please check your phone screen and enter your Mobile Money PIN to authorize UGX ${parsedAmount.toLocaleString()}.`,
-      ussdManualCode: resolvedProvider === 'airtel' ? `*185#` : `*165#`
+      amount: parsedAmount,
+      platformFee,
+      netBeneficiaryAmount,
+      promptText,
+      ussdManualCode,
+      reference
     }
   });
 });
 
-// 6. Instant Payment PIN Authorization Simulation / Webhook Handler
+// 6. Payment PIN / 3D-Secure / PayPal Confirmation
 app.post('/api/donations/simulate-pin-confirm', (req: Request, res: Response) => {
-  const { reference, pin } = req.body;
-  const tx = transactions.get(reference);
+  const { reference, transactionId, pin, otp } = req.body;
+  const refKey = reference || transactionId;
+  const tx = transactions.get(refKey);
 
   if (!tx) {
     return res.status(404).json({ success: false, error: 'Transaction reference not found' });
   }
 
   if (tx.status === 'completed') {
-    return res.json({ success: true, transaction: tx, message: 'Already completed' });
+    const campaign = campaigns.find(c => c.id === tx.campaignId);
+    return res.json({ 
+      success: true, 
+      transaction: tx, 
+      message: 'Already completed',
+      newRaisedAmount: campaign ? campaign.raisedAmount : 0
+    });
   }
 
   // Mark completed
   tx.status = 'completed';
   tx.completedAt = new Date().toISOString();
 
-  // Update campaign financials
+  // Credit campaign financials (gross donation raised)
   const campaign = campaigns.find(c => c.id === tx.campaignId);
   if (campaign) {
     campaign.raisedAmount += tx.amount;
@@ -669,10 +799,15 @@ app.post('/api/donations/simulate-pin-confirm', (req: Request, res: Response) =>
   res.json({
     success: true,
     transaction: tx,
+    newRaisedAmount: campaign ? campaign.raisedAmount : 0,
     campaignTotalRaised: campaign ? campaign.raisedAmount : 0,
     receipt: {
       receiptNumber: tx.receiptNumber,
+      totalAmount: tx.amount,
       amount: tx.amount,
+      platformFee: tx.platformFee || Math.round(tx.amount * 0.05),
+      feePercentage: 5,
+      netBeneficiaryAmount: tx.netBeneficiaryAmount || (tx.amount - Math.round(tx.amount * 0.05)),
       currency: 'UGX',
       campaignTitle: campaign ? campaign.title : 'Uganda Fundraiser',
       date: tx.completedAt,
@@ -749,78 +884,6 @@ app.post('/api/payouts/request', (req: Request, res: Response) => {
   res.json({ success: true, payout });
 });
 
-// 10. AI Campaign Generator with Gemini
-app.post('/api/ai/generate-campaign', async (req: Request, res: Response) => {
-  const { beneficiary, needType, district, targetAmountUGX, rawNotes } = req.body;
-
-  const apiKey = process.env.GEMINI_API_KEY;
-
-  if (apiKey) {
-    try {
-      const ai = new GoogleGenAI({
-        apiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build'
-          }
-        }
-      });
-
-      const prompt = `You are an expert fundraising copywriter and community organizer in Uganda for Kusanya (kusanya.org). 
-Create an authentic, compassionate, and highly persuasive crowdfunding campaign in Ugandan context for:
-- Beneficiary: ${beneficiary || 'A community member, Church ministry, SACCO cooperative, or family in need'}
-- Category/Need: ${needType || 'Medical emergency / Tuition / Church renovation / SACCO revolving fund / Community clean water'}
-- District/Region: ${district || 'Kampala, Uganda'}
-- Target Amount: UGX ${Number(targetAmountUGX || 5000000).toLocaleString()}
-- Key Story Details: ${rawNotes || 'Urgent financial assistance or group capital needed through mobile money on Kusanya.'}
-
-Return a valid JSON object with:
-{
-  "title": "A strong, compassionate 8-12 word headline mentioning beneficiary and city",
-  "tagline": "A concise 1-sentence emotional summary",
-  "story": "A 3-paragraph authentic Ugandan story emphasizing urgency, transparency, breakdown of costs in UGX, and thanking donors (with a warm Luganda or local cultural blessing like Webale nnyo / Mukama abawe omukisa / Apwoyo matek / Mwebale munonga).",
-  "suggestedMilestones": ["UGX milestone 1 breakdown", "UGX milestone 2 breakdown", "UGX milestone 3 breakdown"]
-}`;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.7-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json'
-        }
-      });
-
-      if (response.text) {
-        const parsed = JSON.parse(response.text);
-        return res.json({ success: true, generated: parsed });
-      }
-    } catch (err) {
-      console.warn('Gemini API call encountered an error, falling back to Ugandan template:', err);
-    }
-  }
-
-  // High quality fallback template if Gemini key is unset or error occurs
-  const fallbackStory = `We are reaching out to all kind-hearted Ugandans and friends of Uganda to support ${beneficiary || 'our community cause'} in ${district || 'Uganda'}. 
-
-Due to pressing milestones, we need to raise UGX ${Number(targetAmountUGX || 5000000).toLocaleString()} to cover essential ${needType || 'urgent'} costs. Every contribution, whether UGX 5,000, UGX 20,000, or UGX 100,000 sent through MTN Mobile Money or Airtel Money on Kusanya directly bridges this gap.
-
-${rawNotes ? `Background: ${rawNotes}\n\n` : ''}We promise complete transparency with regular photo updates, receipts, and bank reconciliation statements posted directly on this page. May the Almighty bless the work of your hands. Webale nnyo!`;
-
-  res.json({
-    success: true,
-    generated: {
-      title: `Support for ${beneficiary || 'Our Community'} in ${district || 'Uganda'}`,
-      tagline: `Helping raise UGX ${Number(targetAmountUGX || 5000000).toLocaleString()} for ${needType || 'essential support'}.`,
-      story: fallbackStory,
-      suggestedMilestones: [
-        `Phase 1: Initial emergency or mobilization deposit (UGX ${(Number(targetAmountUGX || 5000000) * 0.4).toLocaleString()})`,
-        `Phase 2: Core implementation & materials (UGX ${(Number(targetAmountUGX || 5000000) * 0.4).toLocaleString()})`,
-        `Phase 3: Final audit, clearance and reporting (UGX ${(Number(targetAmountUGX || 5000000) * 0.2).toLocaleString()})`
-      ]
-    }
-  });
-});
-
 // Vite Middleware & Static handling
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
@@ -843,3 +906,4 @@ async function startServer() {
 }
 
 startServer();
+

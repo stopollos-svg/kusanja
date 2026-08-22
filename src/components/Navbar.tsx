@@ -36,7 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="hover:text-emerald-400 transition-colors flex items-center gap-1 cursor-pointer text-xs"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>0% Platform Fee for Medical & Disaster Relief</span>
+              <span>Transparent 5% App Maintenance • 95% Direct to Beneficiaries</span>
             </button>
           </div>
         </div>
@@ -127,14 +127,23 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Mobile Search Bar */}
         <div className="md:hidden pb-3 pt-1">
           <div className="relative w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search campaigns or districts..."
-              className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-full focus:bg-white focus:border-emerald-600 focus:outline-none transition-all placeholder:text-slate-400 text-slate-900"
+              placeholder="Search causes, districts (e.g. Gulu, Kampala)..."
+              className="w-full pl-9 pr-12 py-2 text-xs bg-slate-50 border border-slate-200 rounded-full focus:bg-white focus:border-emerald-600 focus:outline-none transition-all placeholder:text-slate-400 text-slate-900 font-medium"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => onSearchChange('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-500 bg-slate-200 hover:bg-slate-300 px-1.5 py-0.5 rounded cursor-pointer"
+              >
+                Clear
+              </button>
+            )}
           </div>
         </div>
       </div>
