@@ -49,6 +49,7 @@ interface FeaturedHeroSpotlightProps {
 
 const CATEGORIES = [
   { id: 'all', label: 'All Fundraisers', icon: Sparkles },
+  { id: 'urgent', label: '⚡ Urgent (<48h / Goal)', icon: Flame },
   { id: 'medical', label: 'Medical & Surgery', icon: Stethoscope },
   { id: 'faith', label: 'Churches & Ministry', icon: Church },
   { id: 'sacco', label: 'SACCOs & Group Savings', icon: Landmark },

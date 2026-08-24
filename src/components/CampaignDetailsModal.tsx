@@ -8,6 +8,7 @@ import {
   Download,
   ExternalLink,
   FileText,
+  Flame,
   Heart, 
   Image as ImageIcon,
   Mail,
@@ -31,6 +32,7 @@ import {
 import { Campaign, DonorCheer, PaymentTransaction } from '../types';
 import { formatUGX, timeAgo, formatSocialTimestamp } from '../utils/formatters';
 import { generateDonationReceiptPDF } from '../utils/pdfReceiptGenerator';
+import { getCampaignUrgencyInfo } from '../utils/urgency';
 
 interface CampaignDetailsModalProps {
   campaign: Campaign | null;
@@ -85,6 +87,7 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
   const activeImage = galleryImages[currentImageIndex] || campaign.image;
   const percentage = Math.min(100, Math.round((campaign.raisedAmount / campaign.targetAmount) * 100));
   const campaignDonations = donations.filter(d => d.campaignId === campaign.id);
+  const urgency = getCampaignUrgencyInfo(campaign);
 
   const handleNextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
@@ -288,6 +291,36 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
 
         {/* Modal Main Body */}
         <div className="p-4 sm:p-6 lg:p-8">
+          {/* Urgency Highlight Banner */}
+          {urgency.isUrgent && (
+            <div className={`mb-6 p-4 rounded-2xl border flex items-start gap-3.5 shadow-sm ${
+              urgency.severity === 'critical'
+                ? 'bg-rose-50/90 border-rose-200 text-rose-950'
+                : 'bg-amber-50/90 border-amber-200 text-amber-950'
+            }`}>
+              <div className={`p-2 rounded-xl shrink-0 ${
+                urgency.severity === 'critical' ? 'bg-rose-600 text-white animate-pulse' : 'bg-amber-500 text-slate-950'
+              }`}>
+                <Flame className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className={`text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded ${
+                    urgency.severity === 'critical' ? 'bg-rose-200 text-rose-900' : 'bg-amber-200 text-amber-900'
+                  }`}>
+                    {urgency.badgeLabel}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-700">
+                    {percentage}% Funded • {campaign.daysRemaining} days remaining
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm font-bold leading-relaxed">
+                  {urgency.badgeSubtext}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
             {/* Left 2 Columns: Story & Updates & Donors */}

@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Calendar, Check, CheckCircle2, Clock, Copy, Heart, MapPin, MessageCircle, Phone, Share2, Smartphone, Users, X } from 'lucide-react';
+import { Calendar, Check, CheckCircle2, Clock, Copy, Flame, Heart, MapPin, MessageCircle, Phone, Share2, Smartphone, Users, X, Zap } from 'lucide-react';
 import { Campaign } from '../types';
 import { formatUGX, formatSocialTimestamp } from '../utils/formatters';
+import { getCampaignUrgencyInfo } from '../utils/urgency';
 
 interface CampaignCardProps {
   campaign: Campaign;
@@ -20,6 +21,7 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
 
   const percentage = Math.min(100, Math.round((campaign.raisedAmount / campaign.targetAmount) * 100));
   const contactNum = campaign.beneficiaryPhone || campaign.organizerPhone;
+  const urgency = getCampaignUrgencyInfo(campaign);
 
   // Close share popover on outside click
   useEffect(() => {
@@ -151,13 +153,28 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
           </button>
         </div>
 
-        {/* Verified Badge */}
-        {campaign.organizerKycVerified && (
-          <div className="absolute bottom-3 left-3 flex items-center gap-1 bg-slate-900/85 backdrop-blur-md text-emerald-300 text-[11px] font-semibold px-2.5 py-0.5 rounded-md border border-emerald-500/30">
-            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-            <span>Verified Organizer</span>
-          </div>
-        )}
+        {/* Verified Badge & Urgency Pill */}
+        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-1.5 pointer-events-none">
+          {campaign.organizerKycVerified ? (
+            <div className="flex items-center gap-1 bg-slate-900/85 backdrop-blur-md text-emerald-300 text-[11px] font-semibold px-2.5 py-0.5 rounded-md border border-emerald-500/30">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+              <span>Verified Organizer</span>
+            </div>
+          ) : <div></div>}
+
+          {urgency.isUrgent && (
+            <div className={`flex items-center gap-1 text-[10px] font-black px-2.5 py-0.5 rounded-md shadow-sm border backdrop-blur-md ${
+              urgency.severity === 'critical'
+                ? 'bg-rose-950/90 text-rose-200 border-rose-500/50 animate-pulse'
+                : urgency.severity === 'high'
+                ? 'bg-amber-950/90 text-amber-200 border-amber-500/50'
+                : 'bg-emerald-950/90 text-emerald-200 border-emerald-500/50'
+            }`}>
+              <Flame className="w-3 h-3 text-amber-400 shrink-0 animate-bounce" />
+              <span>{urgency.badgeLabel}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Card Content Body */}
@@ -246,7 +263,13 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
             
             <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                className={`h-full rounded-full transition-all duration-500 ${
+                  urgency.severity === 'critical'
+                    ? 'bg-gradient-to-r from-amber-500 to-rose-500 animate-pulse'
+                    : urgency.severity === 'high'
+                    ? 'bg-gradient-to-r from-amber-400 to-orange-500'
+                    : 'bg-emerald-500'
+                }`}
                 style={{ width: `${percentage}%` }}
               ></div>
             </div>
@@ -271,9 +294,26 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
             </div>
 
             <div className="flex items-center text-slate-600">
-              <div className="flex items-center gap-1 text-[11px] font-medium bg-slate-50 text-slate-600 px-2 py-1 rounded-lg border border-slate-100" title={`${campaign.daysRemaining} days remaining`}>
-                <Calendar className="w-3 h-3 text-slate-400" />
-                <span>{campaign.daysRemaining}d left</span>
+              <div 
+                className={`flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg border ${
+                  urgency.isEndingSoon
+                    ? 'bg-rose-50 text-rose-700 border-rose-200 animate-pulse'
+                    : 'bg-slate-50 text-slate-600 border-slate-100'
+                }`} 
+                title={urgency.isEndingSoon ? `Urgent: ${campaign.daysRemaining} days (${urgency.hoursRemainingApprox}h) left` : `${campaign.daysRemaining} days remaining`}
+              >
+                {urgency.isEndingSoon ? (
+                  <Clock className="w-3 h-3 text-rose-600 shrink-0" />
+                ) : (
+                  <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                )}
+                <span>
+                  {campaign.daysRemaining === 1 
+                    ? '24h left' 
+                    : campaign.daysRemaining === 2 
+                    ? '48h left' 
+                    : `${campaign.daysRemaining}d left`}
+                </span>
               </div>
             </div>
           </div>

@@ -56,7 +56,21 @@ Every single 5,000, 10,000, or 50,000 UGX sent via MTN MoMo or Airtel Money dire
         date: '2026-08-12',
         title: 'Pre-surgery consultation completed at UHI',
         content: 'Dr. Mwambu reviewed Trevor today. His vitals are stable, and preliminary laboratory tests have been processed. We are only UGX 6.5M away from the surgical booking threshold.',
-        author: 'Sarah Nalubega'
+        author: 'Sarah Nalubega',
+        category: 'update',
+        imageUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=800&q=80',
+        likesCount: 24,
+        pinned: true
+      },
+      {
+        id: 'upd-1-b',
+        date: '2026-08-18',
+        title: 'Official ICU Consumables & Hospital Invoice Receipt',
+        content: 'We have received and uploaded the stamped admission receipt from Mulago UHI accounts office showing the initial UGX 10M deposit cleared via MTN MoMo.',
+        author: 'Sarah Nalubega',
+        category: 'receipt',
+        imageUrl: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80',
+        likesCount: 38
       }
     ]
   },
@@ -69,7 +83,7 @@ Every single 5,000, 10,000, or 50,000 UGX sent via MTN MoMo or Airtel Money dire
     region: 'Northern',
     district: 'Gulu',
     targetAmount: 14500000,
-    raisedAmount: 11200000,
+    raisedAmount: 12800000,
     currency: 'UGX',
     story: `Paicho Community Primary School in rural Gulu serves over 850 primary school pupils and 18 teachers. Currently, young girls and boys must walk 3 kilometers twice a day to fetch water from an unprotected stream, resulting in frequent outbreaks of typhoid and lost classroom hours.
 
@@ -91,12 +105,23 @@ Local engineers from Gulu University have completed the site survey and voluntee
     organizerKycVerified: true,
     payoutProvider: 'airtel',
     payoutPhone: '+256 754 119834',
-    donorsCount: 89,
+    donorsCount: 96,
     featured: true,
     createdAt: '2026-08-04T10:30:00Z',
     daysRemaining: 21,
     status: 'active',
-    updates: []
+    updates: [
+      {
+        id: 'upd-gulu-1',
+        date: '2026-08-16',
+        title: 'Borehole Drilling Rig Arrived on School Compound',
+        content: 'Praise God! The hydrogeological survey passed and the drilling truck has initiated drilling at 65 meters depth. Pure clean spring water struck today!',
+        author: 'Okello Denis',
+        category: 'milestone',
+        imageUrl: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=800&q=80',
+        likesCount: 45
+      }
+    ]
   },
   {
     id: 'ug-camp-003',
@@ -107,13 +132,13 @@ Local engineers from Gulu University have completed the site survey and voluntee
     region: 'Central',
     district: 'Kampala',
     targetAmount: 3800000,
-    raisedAmount: 3150000,
+    raisedAmount: 3450000,
     currency: 'UGX',
     story: `My name is Grace Atim, a final year student pursuing a Bachelor of Science in Civil Engineering at Makerere University (College of Engineering, Design, Art and Technology - CEDAT).
 
 I come from a humble farming background in Lira District. Throughout my 4 years, I have maintained a First Class CGPA of 4.42 while tutoring high school mathematics on weekends. Unfortunately, my sponsor passed away earlier this year, leaving an outstanding tuition balance of UGX 3,800,000 required by the Academic Registrar to receive an exam permit.
 
-Final examinations commence in three weeks. Graduating will enable me to start my engineering internship and support my four younger siblings' education. Apwoyo matek (Thank you very much) for standing with me!`,
+Final examinations commence in three days. Graduating will enable me to start my engineering internship and support my four younger siblings' education. Apwoyo matek (Thank you very much) for standing with me!`,
     image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80',
     images: [
       'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80',
@@ -129,12 +154,24 @@ Final examinations commence in three weeks. Graduating will enable me to start m
     organizerKycVerified: true,
     payoutProvider: 'mtn',
     payoutPhone: '+256 779 883201',
-    donorsCount: 63,
-    featured: false,
+    donorsCount: 82,
+    featured: true,
     createdAt: '2026-08-08T14:15:00Z',
-    daysRemaining: 9,
+    daysRemaining: 2, // ⚡ URGENT: Ending in 48 hours & 91% raised
     status: 'active',
-    updates: []
+    updates: [
+      {
+        id: 'upd-mak-1',
+        date: '2026-08-20',
+        title: 'Makerere AR Partial Tuition Payment Cleared (Receipt #MUK-8921)',
+        content: 'I paid UGX 3,000,000 to Makerere University Stanbic Collection Account using funds disbursed via Kusanya MTN MoMo. Only UGX 350,000 remaining before the 48-hour exam permit deadline closes!',
+        author: 'Grace Atim',
+        category: 'receipt',
+        imageUrl: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80',
+        likesCount: 67,
+        pinned: true
+      }
+    ]
   },
   {
     id: 'ug-camp-004',
@@ -422,6 +459,55 @@ Every contribution sent via MTN MoMo and Airtel Money directly empowers the chur
     daysRemaining: 16,
     status: 'active',
     updates: []
+  },
+  {
+    id: 'ug-camp-011',
+    title: 'Urgent Specialized Dialysis & Kidney Procedure for Dr. Ronald Mukasa',
+    slug: 'dr-ronald-mukasa-emergency-dialysis',
+    tagline: 'Final 24-hour surge to complete emergency renal clearance at St. Francis Hospital Nsambya.',
+    category: 'medical',
+    region: 'Central',
+    district: 'Kampala',
+    targetAmount: 25000000,
+    raisedAmount: 23200000,
+    currency: 'UGX',
+    story: `Dr. Ronald Mukasa, a dedicated public health doctor who served communities across Karamoja and Luweero for 15 years, suffered acute kidney failure requiring immediate emergency dialysis and vascular shunt surgery at Nsambya Hospital.
+
+The hospital medical board has scheduled the procedure for tomorrow morning. We are within 93% of the required medical theatre and intensive care deposit (UGX 23,200,000 raised out of UGX 25,000,000).
+
+We urgently request all friends, colleagues, and well-wishers to help close the remaining UGX 1,800,000 gap within the next 24 hours. All contributions disburse directly to St. Francis Hospital Nsambya patient account.`,
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=1200&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=1200&q=80'
+    ],
+    beneficiaryName: 'Dr. Ronald Mukasa',
+    beneficiaryRelationship: 'Colleagues & Uganda Medical Association',
+    beneficiaryPhone: '+256 772 401889',
+    beneficiaryEmail: '',
+    organizerName: 'Dr. Stella Nakalema',
+    organizerPhone: '+256 772 401889',
+    organizerKycVerified: true,
+    payoutProvider: 'mtn',
+    payoutPhone: '+256 772 401889',
+    donorsCount: 114,
+    featured: true,
+    createdAt: '2026-08-19T06:00:00Z',
+    daysRemaining: 1, // ⚡ URGENT: Ending in 24 hours & 93% target reached
+    status: 'active',
+    updates: [
+      {
+        id: 'upd-mukasa-1',
+        date: '2026-08-21',
+        title: 'Nsambya Hospital Theatre Slot Confirmed for Tomorrow 9:00 AM',
+        content: 'The medical team has confirmed theatre scheduling. We only need UGX 1.8M to clear the final intensive care consumables invoice. Thank you everyone for the overwhelming support!',
+        author: 'Dr. Stella Nakalema',
+        category: 'milestone',
+        imageUrl: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80',
+        likesCount: 89,
+        pinned: true
+      }
+    ]
   }
 ];
 
