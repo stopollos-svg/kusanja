@@ -32,7 +32,7 @@ export function calculateCampaignActivity(campaign: Campaign): CampaignActivityS
     daysActive = campaign.activeDurationMonths * 30;
   } else if (campaign.createdAt) {
     const createdTime = new Date(campaign.createdAt).getTime();
-    const nowTime = new Date('2026-08-22T05:40:00Z').getTime(); // align with current app time
+    const nowTime = Date.now();
     const diffDays = Math.max(1, Math.floor((nowTime - createdTime) / (1000 * 60 * 60 * 24)));
     daysActive = diffDays;
   }

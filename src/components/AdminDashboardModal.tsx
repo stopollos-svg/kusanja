@@ -155,52 +155,53 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
-      <div className="relative w-full max-w-6xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200 text-slate-100">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div 
+        className="relative w-full max-w-6xl bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[96dvh] sm:max-h-[92vh] animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 text-slate-100 my-0 sm:my-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Mobile drag handle indicator */}
+        <div className="sm:hidden w-full flex items-center justify-center pt-2.5 pb-1 bg-slate-950">
+          <div className="w-12 h-1 bg-slate-700 rounded-full"></div>
+        </div>
         
         {/* Top App Header */}
-        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950/80 px-6 py-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-              <ShieldCheck className="w-6 h-6" />
+        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950/80 px-4 sm:px-6 py-3.5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+              <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                  Administrative Backend
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded-full border border-emerald-500/30">
+                  Administrative
                 </span>
-                <span className="text-[11px] text-slate-400 font-medium">
+                <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">
                   Kusanya v2.6.4 Production
                 </span>
               </div>
-              <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
-                Progress & Collections Management
+              <h2 className="text-sm sm:text-lg font-extrabold text-white flex items-center gap-1.5">
+                Progress & Collections
               </h2>
             </div>
           </div>
 
           {/* Admin User Info & Actions */}
-          <div className="flex items-center gap-3">
-            <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl px-3.5 py-1.5 flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center">
+          <div className="flex items-center gap-2">
+            <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl px-2.5 py-1 flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-[11px] flex items-center justify-center">
                 {admin.email.charAt(0).toUpperCase()}
               </div>
-              <div className="text-left">
-                <div className="text-xs font-bold text-white flex items-center gap-1">
+              <div className="text-left hidden xs:block">
+                <div className="text-[11px] font-bold text-white flex items-center gap-1">
                   {admin.name || admin.email.split('@')[0]}
-                  <span className="text-[9px] bg-amber-500/20 text-amber-300 font-black px-1.5 py-0.2 rounded">
-                    Admin
-                  </span>
-                </div>
-                <div className="text-[10px] text-slate-400 truncate max-w-[150px]">
-                  {admin.email}
                 </div>
               </div>
             </div>
 
             <button
               onClick={onLogout}
-              className="p-2.5 rounded-xl bg-slate-800 hover:bg-rose-950/50 hover:text-rose-400 text-slate-400 border border-slate-700 transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+              className="p-2 rounded-xl bg-slate-800 hover:bg-rose-950/50 hover:text-rose-400 text-slate-400 border border-slate-700 transition-colors flex items-center gap-1 text-xs font-bold cursor-pointer"
               title="Log Out"
             >
               <LogOut className="w-4 h-4" />
@@ -209,7 +210,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
+              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-white/10 transition-colors cursor-pointer active:scale-95"
+              aria-label="Close modal"
             >
               <X className="w-5 h-5" />
             </button>

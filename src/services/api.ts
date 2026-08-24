@@ -1,4 +1,4 @@
-import { Campaign, DonorCheer, MoMoProvider, PaymentTransaction, PayoutRequest } from '../types';
+import { Campaign, CampaignUpdate, DonorCheer, MoMoProvider, PaymentTransaction, PayoutRequest } from '../types';
 
 // Default Seed Campaigns in case server is 404/offline or hosted as static SPA
 export const DEFAULT_SEED_CAMPAIGNS: Campaign[] = [
@@ -499,7 +499,17 @@ function getStoredCampaigns(): Campaign[] {
     const raw = localStorage.getItem(LS_CAMPAIGNS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Ensure top active sustained causes are merged if missing
+        const existingIds = new Set(parsed.map((c: any) => c.id));
+        const missingSeeds = DEFAULT_SEED_CAMPAIGNS.filter(seed => !existingIds.has(seed.id));
+        if (missingSeeds.length > 0) {
+          const merged = [...parsed, ...missingSeeds];
+          saveStoredCampaigns(merged);
+          return merged;
+        }
+        return parsed;
+      }
     }
   } catch (e) {
     console.warn('LocalStorage error reading campaigns', e);
@@ -665,19 +675,21 @@ export const api = {
   },
 
   /**
-   * Post organizer update
+   * Post organizer update / story / receipt
    */
   async postUpdate(
     campaignId: string,
     title: string,
     content: string,
-    author?: string
-  ): Promise<{ success: boolean; update: { id: string; date: string; title: string; content: string; author: string } }> {
+    author?: string,
+    imageUrl?: string,
+    category: 'update' | 'milestone' | 'receipt' | 'story' | 'gratitude' = 'update'
+  ): Promise<{ success: boolean; update: CampaignUpdate }> {
     try {
       const res = await fetch(`/api/campaigns/${campaignId}/updates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, author }),
+        body: JSON.stringify({ title, content, author, imageUrl, category }),
       });
 
       if (res.ok) {
@@ -690,12 +702,16 @@ export const api = {
       console.warn('API update failed. Saving update locally.', err);
     }
 
-    const update = {
+    const update: CampaignUpdate = {
       id: `upd-${Date.now()}`,
       date: new Date().toISOString().split('T')[0],
       title,
       content,
       author: author || 'Organizer',
+      imageUrl: imageUrl || undefined,
+      category,
+      likesCount: 0,
+      pinned: false,
     };
 
     const current = getStoredCampaigns();
@@ -703,6 +719,44 @@ export const api = {
     saveStoredCampaigns(updated);
 
     return { success: true, update };
+  },
+
+  /**
+   * Like / Cheer a specific update post
+   */
+  async likeUpdate(campaignId: string, updateId: string): Promise<{ success: boolean; likesCount: number }> {
+    const current = getStoredCampaigns();
+    let newLikes = 1;
+    const updated = current.map((c) => {
+      if (c.id === campaignId) {
+        const updatedPosts = c.updates.map((u) => {
+          if (u.id === updateId) {
+            newLikes = (u.likesCount || 0) + 1;
+            return { ...u, likesCount: newLikes };
+          }
+          return u;
+        });
+        return { ...c, updates: updatedPosts };
+      }
+      return c;
+    });
+    saveStoredCampaigns(updated);
+    return { success: true, likesCount: newLikes };
+  },
+
+  /**
+   * Delete or moderate an update post
+   */
+  async deleteUpdate(campaignId: string, updateId: string): Promise<{ success: boolean }> {
+    const current = getStoredCampaigns();
+    const updated = current.map((c) => {
+      if (c.id === campaignId) {
+        return { ...c, updates: c.updates.filter((u) => u.id !== updateId) };
+      }
+      return c;
+    });
+    saveStoredCampaigns(updated);
+    return { success: true };
   },
 
   /**

@@ -140,34 +140,42 @@ export const EditCampaignModal: React.FC<EditCampaignModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
-        
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div 
+        className="relative w-full max-w-2xl bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-0 sm:my-6 max-h-[94dvh] sm:max-h-[90vh] flex flex-col animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Mobile drag handle indicator */}
+        <div className="sm:hidden w-full flex items-center justify-center pt-2.5 pb-1 bg-slate-900">
+          <div className="w-12 h-1 bg-slate-700 rounded-full"></div>
+        </div>
+
         {/* Header */}
-        <div className="bg-slate-900 px-6 py-5 text-white flex items-center justify-between">
+        <div className="bg-slate-900 px-4 sm:px-6 py-4 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
               <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">
                 Admin Campaign Editor
               </span>
-              <h3 className="text-lg font-black text-white truncate max-w-md">
+              <h3 className="text-base sm:text-lg font-black text-white truncate max-w-[200px] sm:max-w-md">
                 Edit Fundraiser Details
               </h3>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+            className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer active:scale-95"
+            aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1">
           {error && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />

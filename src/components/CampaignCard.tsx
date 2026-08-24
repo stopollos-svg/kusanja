@@ -1,7 +1,7 @@
-import React from 'react';
-import { Calendar, CheckCircle2, Heart, MapPin, Phone, Smartphone, Users } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Calendar, Check, CheckCircle2, Clock, Copy, Heart, MapPin, MessageCircle, Phone, Share2, Smartphone, Users, X } from 'lucide-react';
 import { Campaign } from '../types';
-import { formatUGX } from '../utils/formatters';
+import { formatUGX, formatSocialTimestamp } from '../utils/formatters';
 
 interface CampaignCardProps {
   campaign: Campaign;
@@ -14,11 +14,89 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
   onSelect,
   onDonate,
 }) => {
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
   const percentage = Math.min(100, Math.round((campaign.raisedAmount / campaign.targetAmount) * 100));
   const contactNum = campaign.beneficiaryPhone || campaign.organizerPhone;
 
+  // Close share popover on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+        setIsShareOpen(false);
+      }
+    };
+    if (isShareOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isShareOpen]);
+
+  const getShareUrl = () => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.origin + window.location.pathname);
+      url.searchParams.set('campaign', campaign.id);
+      return url.toString();
+    }
+    return `https://kusanya.org/?campaign=${campaign.id}`;
+  };
+
+  const getWhatsAppShareUrl = () => {
+    const shareUrl = getShareUrl();
+    const message = `🇺🇬 *Support "${campaign.title}" on Kusanya Uganda*\n\n` +
+      `📍 *Location:* ${campaign.district}, Uganda\n` +
+      `💰 *Raised:* ${formatUGX(campaign.raisedAmount)} of ${formatUGX(campaign.targetAmount)} (${percentage}% funded)\n` +
+      `👥 *Contributors:* ${campaign.donorsCount} Mobile Money givers\n\n` +
+      `📲 Support via MTN & Airtel MoMo:\n${shareUrl}`;
+    return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+  };
+
+  const handleCopyLink = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = getShareUrl();
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = url;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    } catch (err) {
+      console.error('Failed to copy link', err);
+    }
+  };
+
+  const handleNativeShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: campaign.title,
+          text: `Support "${campaign.title}" on Kusanya (Uganda)`,
+          url: getShareUrl(),
+        });
+        setIsShareOpen(false);
+      } catch {
+        // User cancelled or share dismissed
+      }
+    }
+  };
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col group overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col group overflow-hidden relative">
       
       {/* Card Image Header */}
       <div 
@@ -52,10 +130,25 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
           </span>
         </div>
 
-        {/* District Location */}
-        <div className="absolute top-3.5 right-3.5 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md text-slate-100 text-xs font-semibold px-2.5 py-1 rounded-lg border border-slate-700/60">
-          <MapPin className="w-3 h-3 text-emerald-400" />
-          <span>{campaign.district}</span>
+        {/* District Location & Quick Share Icon */}
+        <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5">
+          <div className="flex items-center gap-1 bg-slate-900/80 backdrop-blur-md text-slate-100 text-xs font-semibold px-2.5 py-1 rounded-lg border border-slate-700/60 shadow-xs">
+            <MapPin className="w-3 h-3 text-emerald-400" />
+            <span>{campaign.district}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsShareOpen(!isShareOpen);
+            }}
+            className="p-1.5 bg-slate-900/80 hover:bg-slate-900 backdrop-blur-md text-slate-200 hover:text-white rounded-lg border border-slate-700/60 shadow-xs transition-all cursor-pointer"
+            title="Share on WhatsApp or copy link"
+            aria-label="Share campaign"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+          </button>
         </div>
 
         {/* Verified Badge */}
@@ -68,9 +161,32 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
       </div>
 
       {/* Card Content Body */}
-      <div className="p-5 flex-1 flex flex-col justify-between">
+      <div className="p-5 flex-1 flex flex-col justify-between relative">
         
         <div>
+          {/* Social Media Post Timestamp & Organizer Header */}
+          {(() => {
+            const postTime = formatSocialTimestamp(campaign.createdAt);
+            return (
+              <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2 font-medium">
+                <div className="flex items-center gap-1.5 text-slate-500">
+                  <Clock className="w-3 h-3 text-emerald-600 shrink-0" />
+                  <span title={`Published: ${postTime.full}`} className="font-semibold text-slate-600">
+                    Posted {postTime.relative}
+                  </span>
+                  {postTime.isToday && (
+                    <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-emerald-100 text-emerald-800 animate-pulse">
+                      NEW POST
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] text-slate-400 truncate max-w-[120px]" title={`By ${campaign.organizerName}`}>
+                  by {campaign.organizerName}
+                </span>
+              </div>
+            );
+          })()}
+
           {/* Title */}
           <h3 
             onClick={() => onSelect(campaign)}
@@ -89,22 +205,33 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
             <span className="truncate">
               For: <strong className="text-slate-800 font-semibold">{campaign.beneficiaryName}</strong>
             </span>
-            {contactNum && (
-              <a 
-                href={`tel:${contactNum.replace(/\s+/g, '')}`}
-                onClick={(e) => e.stopPropagation()}
-                className="shrink-0 flex items-center gap-1 text-emerald-700 hover:text-emerald-800 font-bold ml-2 bg-emerald-100/70 hover:bg-emerald-100 px-2 py-0.5 rounded-md transition-colors"
-                title="Direct call"
-              >
-                <Phone className="w-3 h-3 text-emerald-600" />
-                <span>{contactNum}</span>
-              </a>
-            )}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {campaign.updates && campaign.updates.length > 0 && (
+                <span 
+                  className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded"
+                  title={`${campaign.updates.length} post updates published`}
+                >
+                  <MessageCircle className="w-2.5 h-2.5 text-emerald-700" />
+                  <span>{campaign.updates.length} {campaign.updates.length === 1 ? 'post' : 'posts'}</span>
+                </span>
+              )}
+              {contactNum && (
+                <a 
+                  href={`tel:${contactNum.replace(/\s+/g, '')}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-1 text-emerald-700 hover:text-emerald-800 font-bold bg-emerald-100/70 hover:bg-emerald-100 px-2 py-0.5 rounded-md transition-colors"
+                  title="Direct call"
+                >
+                  <Phone className="w-3 h-3 text-emerald-600" />
+                  <span>{contactNum}</span>
+                </a>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Progress Bar & Financials */}
-        <div className="space-y-3 pt-3 border-t border-slate-100">
+        <div className="space-y-3 pt-3 border-t border-slate-100 relative">
           
           {/* Progress Visual */}
           <div>
@@ -128,41 +255,147 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
           {/* Raised & Donors Summary */}
           <div className="flex items-center justify-between text-xs text-slate-700">
             <div>
-              <span className="text-sm sm:text-base font-black text-slate-900">
-                {formatUGX(campaign.raisedAmount)}
-              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-sm sm:text-base font-black text-slate-900">
+                  {formatUGX(campaign.raisedAmount)}
+                </span>
+                <span 
+                  className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-200/80 shadow-2xs"
+                  title={`${campaign.donorsCount} verified unique contributors`}
+                >
+                  <Users className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
+                  <span>{campaign.donorsCount} {campaign.donorsCount === 1 ? 'contributor' : 'contributors'}</span>
+                </span>
+              </div>
               <span className="text-[11px] text-slate-500 block">Raised in UGX</span>
             </div>
 
-            <div className="flex items-center gap-3 text-slate-600">
-              <div className="flex items-center gap-1" title={`${campaign.donorsCount} Mobile Money Donors`}>
-                <Users className="w-3.5 h-3.5 text-slate-400" />
-                <span className="font-bold text-slate-800">{campaign.donorsCount}</span>
-              </div>
-              <div className="flex items-center gap-1" title={`${campaign.daysRemaining} days left`}>
-                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <div className="flex items-center text-slate-600">
+              <div className="flex items-center gap-1 text-[11px] font-medium bg-slate-50 text-slate-600 px-2 py-1 rounded-lg border border-slate-100" title={`${campaign.daysRemaining} days remaining`}>
+                <Calendar className="w-3 h-3 text-slate-400" />
                 <span>{campaign.daysRemaining}d left</span>
               </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-2 pt-2">
+          {/* Action Buttons & Share Button */}
+          <div className="flex items-center gap-1.5 pt-2">
             <button
               onClick={() => onSelect(campaign)}
-              className="px-3 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors text-center cursor-pointer"
+              className="flex-1 px-3 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors text-center cursor-pointer truncate"
             >
               Read Story
             </button>
 
+            {/* Social Share Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsShareOpen(!isShareOpen);
+              }}
+              className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+                isShareOpen 
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' 
+                  : 'text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-200/90'
+              }`}
+              title="Share on WhatsApp or copy link"
+              aria-label="Share campaign"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+
             <button
               onClick={() => onDonate(campaign)}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-black text-slate-900 bg-yellow-400 hover:bg-yellow-300 rounded-xl shadow-sm border-b-2 border-yellow-600 active:scale-95 transition-all cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-xs font-black text-slate-900 bg-yellow-400 hover:bg-yellow-300 rounded-xl shadow-sm border-b-2 border-yellow-600 active:scale-95 transition-all cursor-pointer truncate"
             >
-              <Smartphone className="w-3.5 h-3.5 text-slate-900" />
-              <span>Donate MoMo</span>
+              <Smartphone className="w-3.5 h-3.5 text-slate-900 shrink-0" />
+              <span>Donate</span>
             </button>
           </div>
+
+          {/* Share Popover Dropdown */}
+          {isShareOpen && (
+            <div 
+              ref={popoverRef}
+              onClick={(e) => e.stopPropagation()}
+              className="absolute bottom-full left-0 right-0 mb-2 z-30 bg-white rounded-2xl border border-slate-200 shadow-2xl p-3.5 space-y-2.5 transition-all animate-in fade-in zoom-in-95 duration-150"
+            >
+              <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                <div className="flex items-center gap-1.5 text-xs font-black text-slate-900">
+                  <Share2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Share Fundraiser</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsShareOpen(false)}
+                  className="p-1 text-slate-400 hover:text-slate-600 rounded-md transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* WhatsApp Direct Share Button */}
+              <a
+                href={getWhatsAppShareUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsShareOpen(false)}
+                className="w-full flex items-center justify-between p-2.5 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl font-bold text-xs shadow-sm transition-all group"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                    <MessageCircle className="w-3.5 h-3.5 fill-white text-[#25D366]" />
+                  </div>
+                  <div className="text-left">
+                    <span className="block leading-none font-extrabold text-white">Share to WhatsApp</span>
+                    <span className="text-[10px] text-emerald-100 font-medium">Chats & Status</span>
+                  </div>
+                </div>
+                <span className="text-[10px] bg-white/25 px-2 py-0.5 rounded-full font-bold">Fast</span>
+              </a>
+
+              {/* Copy Link Button */}
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                  copied 
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300' 
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${copied ? 'bg-emerald-200' : 'bg-slate-200'}`}>
+                    {copied ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-700" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5 text-slate-700" />
+                    )}
+                  </div>
+                  <span className="font-bold">
+                    {copied ? 'Link Copied to Clipboard!' : 'Copy Campaign Link'}
+                  </span>
+                </div>
+                {copied && (
+                  <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                    Done
+                  </span>
+                )}
+              </button>
+
+              {/* Native System Share (if supported) */}
+              {typeof navigator !== 'undefined' && 'share' in navigator && (
+                <button
+                  type="button"
+                  onClick={handleNativeShare}
+                  className="w-full text-center text-[11px] font-semibold text-slate-500 hover:text-slate-800 pt-0.5 transition-colors"
+                >
+                  More sharing options...
+                </button>
+              )}
+            </div>
+          )}
 
         </div>
 
@@ -171,3 +404,4 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
     </div>
   );
 };
+

@@ -65,15 +65,47 @@ export function timeAgo(dateString?: string | null): string {
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return 'Recently';
   const now = new Date();
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  const diffMs = now.getTime() - date.getTime();
+  const seconds = Math.floor(diffMs / 1000);
 
-  if (seconds < 60) return 'Just now';
+  if (seconds < 10) return 'Just now';
+  if (seconds < 60) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
 }
+
+export function formatSocialTimestamp(dateString?: string | null): { relative: string; full: string; timeOnly: string; isToday: boolean } {
+  if (!dateString) {
+    return { relative: 'Recently', full: 'Recently', timeOnly: '', isToday: false };
+  }
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return { relative: 'Recently', full: 'Recently', timeOnly: '', isToday: false };
+  }
+  const now = new Date();
+  const relative = timeAgo(dateString);
+  const timeOnly = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true });
+  
+  const isToday = date.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+
+  let full = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) + ` at ${timeOnly}`;
+  if (isToday) {
+    full = `Today at ${timeOnly}`;
+  } else if (isYesterday) {
+    full = `Yesterday at ${timeOnly}`;
+  }
+
+  return { relative, full, timeOnly, isToday };
+}
+
 

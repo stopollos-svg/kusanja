@@ -6,6 +6,10 @@ export interface CampaignUpdate {
   title: string;
   content: string;
   author: string;
+  imageUrl?: string;
+  pinned?: boolean;
+  category?: 'update' | 'milestone' | 'receipt' | 'story' | 'gratitude';
+  likesCount?: number;
 }
 
 export interface DonorCheer {

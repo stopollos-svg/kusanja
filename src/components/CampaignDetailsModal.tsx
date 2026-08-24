@@ -16,15 +16,20 @@ import {
   MessageSquare, 
   Phone,
   PhoneCall,
+  Pin,
+  PlusCircle,
   Send, 
   Share2, 
   ShieldCheck, 
   Smartphone, 
+  Sparkles,
+  Tag,
+  ThumbsUp,
   Users, 
   X 
 } from 'lucide-react';
 import { Campaign, DonorCheer, PaymentTransaction } from '../types';
-import { formatUGX, timeAgo } from '../utils/formatters';
+import { formatUGX, timeAgo, formatSocialTimestamp } from '../utils/formatters';
 import { generateDonationReceiptPDF } from '../utils/pdfReceiptGenerator';
 
 interface CampaignDetailsModalProps {
@@ -32,7 +37,14 @@ interface CampaignDetailsModalProps {
   donations: DonorCheer[];
   onClose: () => void;
   onDonate: (campaign: Campaign) => void;
-  onPostUpdate: (campaignId: string, title: string, content: string) => Promise<void>;
+  onPostUpdate: (
+    campaignId: string,
+    title: string,
+    content: string,
+    author?: string,
+    imageUrl?: string,
+    category?: 'update' | 'milestone' | 'receipt' | 'story' | 'gratitude'
+  ) => Promise<void>;
 }
 
 export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
@@ -49,7 +61,12 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
   const [showUpdateForm, setShowUpdateForm] = useState(false);
   const [updateTitle, setUpdateTitle] = useState('');
   const [updateContent, setUpdateContent] = useState('');
+  const [updateAuthor, setUpdateAuthor] = useState('');
+  const [updateImageUrl, setUpdateImageUrl] = useState('');
+  const [updateCategory, setUpdateCategory] = useState<'update' | 'milestone' | 'receipt' | 'story' | 'gratitude'>('update');
   const [isSubmittingUpdate, setIsSubmittingUpdate] = useState(false);
+  const [postSuccessNotice, setPostSuccessNotice] = useState(false);
+  const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
 
   if (!campaign) return null;
 
@@ -103,11 +120,22 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
 
     setIsSubmittingUpdate(true);
     try {
-      await onPostUpdate(campaign.id, updateTitle, updateContent);
+      await onPostUpdate(
+        campaign.id,
+        updateTitle.trim(),
+        updateContent.trim(),
+        updateAuthor.trim() || campaign.organizerName,
+        updateImageUrl.trim() || undefined,
+        updateCategory
+      );
       setUpdateTitle('');
       setUpdateContent('');
+      setUpdateImageUrl('');
+      setUpdateAuthor('');
       setShowUpdateForm(false);
       setActiveTab('updates');
+      setPostSuccessNotice(true);
+      setTimeout(() => setPostSuccessNotice(false), 4500);
     } catch (err) {
       console.error(err);
     } finally {
@@ -115,12 +143,19 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
     }
   };
 
+  const handleLikePost = (postId: string) => {
+    setLikedPosts((prev) => ({
+      ...prev,
+      [postId]: !prev[postId],
+    }));
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
       
       {/* Modal Container with Mobile Bottom Sheet Styling */}
       <div 
-        className="relative w-full max-w-4xl bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden my-0 sm:my-6 border border-slate-200 animate-in fade-in slide-in-from-bottom-6 duration-250 max-h-[94vh] sm:max-h-[90vh] flex flex-col"
+        className="relative w-full max-w-4xl bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden my-0 sm:my-6 border border-slate-200 animate-in fade-in slide-in-from-bottom-6 duration-250 max-h-[95dvh] sm:max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile drag handle indicator */}
@@ -305,8 +340,8 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
                       : 'border-transparent text-slate-500 hover:text-slate-700'
                   }`}
                 >
-                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span>Updates ({campaign.updates.length})</span>
+                  <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span>Posts & Updates ({campaign.updates.length})</span>
                 </button>
               </div>
 
@@ -314,6 +349,41 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
               {activeTab === 'story' && (
                 <div className="space-y-6 text-slate-800 leading-relaxed text-sm sm:text-base">
                   
+                  {/* Social Media Post Metadata Bar */}
+                  {(() => {
+                    const postMeta = formatSocialTimestamp(campaign.createdAt);
+                    return (
+                      <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
+                            {campaign.organizerName ? campaign.organizerName.charAt(0).toUpperCase() : 'K'}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                              <span>{campaign.organizerName}</span>
+                              <span className="text-[11px] font-normal text-slate-500">(Campaign Organizer)</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5">
+                              <Clock className="w-3 h-3 text-emerald-600" />
+                              <span title={postMeta.full}>Published {postMeta.relative} ({postMeta.full})</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {postMeta.isToday && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              ✨ Published Today
+                            </span>
+                          )}
+                          <span className="text-[11px] text-slate-500 bg-white px-2.5 py-1 rounded-lg border border-slate-200 font-medium">
+                            District: <strong>{campaign.district}</strong>
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* KYC Verification Callout */}
                   <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
@@ -619,75 +689,298 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
                 </div>
               )}
 
-              {/* Tab 3: Updates Timeline */}
+              {/* Tab 3: Updates & Stories Timeline */}
               {activeTab === 'updates' && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-slate-800">Organizer Progress Updates</h4>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <span>Campaign Posts & Updates</span>
+                        <span className="text-xs font-semibold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          {campaign.updates.length} {campaign.updates.length === 1 ? 'Post' : 'Posts'}
+                        </span>
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        Official progress updates, milestone receipts, and messages from {campaign.organizerName}
+                      </p>
+                    </div>
+
                     <button
                       onClick={() => setShowUpdateForm(!showUpdateForm)}
-                      className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer border border-emerald-200"
+                      className="text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-1.5 active:scale-95"
                     >
-                      {showUpdateForm ? 'Cancel' : '+ Post an Update'}
+                      <PlusCircle className="w-4 h-4" />
+                      <span>{showUpdateForm ? 'Close Composer' : '+ Create New Post'}</span>
                     </button>
                   </div>
 
+                  {/* Post Success Banner */}
+                  {postSuccessNotice && (
+                    <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-xs text-emerald-900 font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+                      <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>
+                        <strong>Post published successfully!</strong> Your post is now retained on this fundraiser page and visible to all donors.
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Rich Post Composer */}
                   {showUpdateForm && (
-                    <form onSubmit={submitOrganizerUpdate} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-                      <h5 className="text-xs font-bold uppercase text-slate-600">Post update as organizer ({campaign.organizerName})</h5>
-                      <input
-                        type="text"
-                        value={updateTitle}
-                        onChange={(e) => setUpdateTitle(e.target.value)}
-                        placeholder="Update Title (e.g. Doctor's receipt / Surgery booking confirmation)"
-                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-emerald-600"
-                        required
-                      />
-                      <textarea
-                        value={updateContent}
-                        onChange={(e) => setUpdateContent(e.target.value)}
-                        placeholder="Share the latest progress, receipts, or message to Mobile Money donors..."
-                        rows={3}
-                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-emerald-600"
-                        required
-                      />
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowUpdateForm(false)}
-                          className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={isSubmittingUpdate}
-                          className="px-4 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer"
-                        >
-                          {isSubmittingUpdate ? 'Posting...' : 'Publish Update'}
-                        </button>
+                    <form onSubmit={submitOrganizerUpdate} className="bg-slate-50 border-2 border-emerald-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm animate-in fade-in zoom-in-95 duration-150">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-xs">
+                            {campaign.organizerName.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-bold uppercase text-slate-800">
+                              Publish New Post as Organizer
+                            </h5>
+                            <span className="text-[11px] text-slate-500">
+                              Posts are stored and retained across all donor visits
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          Live Feed
+                        </span>
+                      </div>
+
+                      {/* Post Category Picker */}
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 block mb-1.5">
+                          Post Category / Topic
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { key: 'update', label: '📢 General Update', desc: 'Progress & news' },
+                            { key: 'receipt', label: '🧾 Medical / Expense Receipt', desc: 'Proof of spend' },
+                            { key: 'milestone', label: '🎯 Target Milestone', desc: 'Funds reached' },
+                            { key: 'story', label: '📖 Patient / Beneficiary Story', desc: 'Heartfelt note' },
+                            { key: 'gratitude', label: '🙏 Thank You Message', desc: 'To donors' },
+                          ].map((cat) => (
+                            <button
+                              key={cat.key}
+                              type="button"
+                              onClick={() => setUpdateCategory(cat.key as any)}
+                              className={`text-xs px-3 py-1.5 rounded-xl font-medium border transition-all cursor-pointer flex items-center gap-1.5 ${
+                                updateCategory === cat.key
+                                  ? 'bg-emerald-600 text-white border-emerald-600 font-bold shadow-xs'
+                                  : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-300'
+                              }`}
+                            >
+                              <span>{cat.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Title & Author */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="sm:col-span-2">
+                          <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                            Post Headline / Title *
+                          </label>
+                          <input
+                            type="text"
+                            value={updateTitle}
+                            onChange={(e) => setUpdateTitle(e.target.value)}
+                            placeholder="e.g. Hospital Admission Note & Doctor Consultation Receipt"
+                            className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                            Posted By (Author Name)
+                          </label>
+                          <input
+                            type="text"
+                            value={updateAuthor}
+                            onChange={(e) => setUpdateAuthor(e.target.value)}
+                            placeholder={campaign.organizerName || 'Organizer Name'}
+                            className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Photo / Receipt Attachment URL */}
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                          Attach Photo / Medical Receipt (Image URL) - Optional
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="url"
+                            value={updateImageUrl}
+                            onChange={(e) => setUpdateImageUrl(e.target.value)}
+                            placeholder="https://images.unsplash.com/... or receipt link"
+                            className="flex-1 text-xs p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                          {updateImageUrl && (
+                            <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
+                              <img
+                                src={updateImageUrl}
+                                alt="Preview"
+                                referrerPolicy="no-referrer"
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Post Content */}
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                          Post Content / Details *
+                        </label>
+                        <textarea
+                          value={updateContent}
+                          onChange={(e) => setUpdateContent(e.target.value)}
+                          placeholder="Share the full update, breakdown of funds spent, surgery date, doctor notes, or a heartfelt message to donors..."
+                          rows={4}
+                          className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 leading-relaxed"
+                          required
+                        />
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                        <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Retained in local storage & synced instantly</span>
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowUpdateForm(false)}
+                            className="px-3.5 py-1.5 text-xs text-slate-600 hover:text-slate-900 rounded-lg"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={isSubmittingUpdate}
+                            className="px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl cursor-pointer shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                            <span>{isSubmittingUpdate ? 'Publishing...' : 'Publish Post'}</span>
+                          </button>
+                        </div>
                       </div>
                     </form>
                   )}
 
+                  {/* Empty state or Posts list */}
                   {campaign.updates.length === 0 ? (
-                    <div className="text-center py-10 bg-slate-50 rounded-xl border border-slate-100 text-slate-500 text-xs">
-                      No updates posted yet. The organizer will post medical receipts or milestone notes here.
+                    <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-6 text-slate-500">
+                      <MessageSquare className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                      <h5 className="text-sm font-bold text-slate-700 mb-1">No posts or updates yet</h5>
+                      <p className="text-xs text-slate-500 max-w-md mx-auto mb-4">
+                        The organizer has not published an update yet. Click the button above to create the first post with receipts or progress notes.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowUpdateForm(true)}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors shadow-xs"
+                      >
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        <span>Create First Post</span>
+                      </button>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {campaign.updates.map((upd) => (
-                        <div key={upd.id} className="border-l-2 border-emerald-500 pl-4 py-1">
-                          <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-                            <span className="font-bold text-slate-900">{upd.title}</span>
-                            <span>{upd.date}</span>
+                      {campaign.updates.map((upd, idx) => {
+                        const isLiked = likedPosts[upd.id];
+                        const totalLikes = (upd.likesCount || 0) + (isLiked ? 1 : 0);
+                        
+                        return (
+                          <div 
+                            key={upd.id} 
+                            className={`bg-white border rounded-2xl p-4 sm:p-5 transition-all shadow-xs space-y-3 ${
+                              upd.pinned ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200/90'
+                            }`}
+                          >
+                            {/* Post Header */}
+                            <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 pb-3">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
+                                  {upd.author ? upd.author.charAt(0).toUpperCase() : 'O'}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-bold text-sm text-slate-900">{upd.title}</span>
+                                    {upd.pinned && (
+                                      <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
+                                        <Pin className="w-3 h-3 text-amber-700" />
+                                        <span>Pinned Post</span>
+                                      </span>
+                                    )}
+                                    {upd.category && (
+                                      <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200">
+                                        {upd.category === 'receipt' ? '🧾 Receipt' : upd.category === 'milestone' ? '🎯 Milestone' : upd.category === 'story' ? '📖 Story' : upd.category === 'gratitude' ? '🙏 Gratitude' : '📢 Update'}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                                    <span>By <strong className="text-slate-700">{upd.author || campaign.organizerName}</strong></span>
+                                    <span>•</span>
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3 text-slate-400" />
+                                      <span>{upd.date}</span>
+                                    </div>
+                                    <span>•</span>
+                                    <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
+                                      Post #{campaign.updates.length - idx}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Post Image Attachment (if any) */}
+                            {upd.imageUrl && (
+                              <div className="rounded-xl overflow-hidden border border-slate-200 max-h-80 bg-slate-900">
+                                <img
+                                  src={upd.imageUrl}
+                                  alt={upd.title}
+                                  referrerPolicy="no-referrer"
+                                  className="w-full h-full max-h-80 object-cover hover:scale-102 transition-transform duration-300"
+                                />
+                              </div>
+                            )}
+
+                            {/* Post Body Content */}
+                            <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                              {upd.content}
+                            </p>
+
+                            {/* Post Footer & Reactions */}
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                              <button
+                                type="button"
+                                onClick={() => handleLikePost(upd.id)}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                                  isLiked 
+                                    ? 'bg-rose-50 border-rose-200 text-rose-600' 
+                                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                                }`}
+                              >
+                                <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-rose-600 text-rose-600' : 'text-slate-400'}`} />
+                                <span>{totalLikes > 0 ? `${totalLikes} ${totalLikes === 1 ? 'Cheer' : 'Cheers'}` : 'Send Cheer'}</span>
+                              </button>
+
+                              <span className="text-[11px] text-slate-400">
+                                Retained on Kusanya Uganda
+                              </span>
+                            </div>
                           </div>
-                          <p className="text-xs text-slate-700 leading-relaxed">
-                            {upd.content}
-                          </p>
-                          <span className="text-[11px] text-slate-500 mt-1 block">By {upd.author}</span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

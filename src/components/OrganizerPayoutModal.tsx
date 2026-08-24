@@ -81,7 +81,7 @@ export const OrganizerPayoutModal: React.FC<OrganizerPayoutModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div 
-        className="relative w-full max-w-xl bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 max-h-[94vh] sm:max-h-[90vh] flex flex-col my-0 sm:my-6"
+        className="relative w-full max-w-xl bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 max-h-[95dvh] sm:max-h-[90vh] flex flex-col my-0 sm:my-6"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile drag handle indicator */}

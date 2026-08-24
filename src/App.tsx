@@ -14,13 +14,18 @@ import { AdminLoginModal } from './components/AdminLoginModal';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { EditCampaignModal } from './components/EditCampaignModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
+import { FloatingStartFundraiserButton } from './components/FloatingStartFundraiserButton';
 import { Footer } from './components/Footer';
-import { Heart, RefreshCw, Search, ShieldCheck, Sparkles } from 'lucide-react';
+import { CheckCircle2, Clock, Heart, RefreshCw, Search, Share2, ShieldCheck, Sparkles, Wifi, WifiOff, X } from 'lucide-react';
+import { formatSocialTimestamp } from './utils/formatters';
 
 export default function App() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [recentDonations, setRecentDonations] = useState<DonorCheer[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [newPostToast, setNewPostToast] = useState<{ campaign: Campaign; timestamp: string } | null>(null);
+  const [isOffline, setIsOffline] = useState<boolean>(typeof navigator !== 'undefined' ? !navigator.onLine : false);
+  const [reconnectedToast, setReconnectedToast] = useState<boolean>(false);
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -89,10 +94,84 @@ export default function App() {
     };
     init();
 
+    // Check for campaign query parameter on initial load
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const campaignParam = urlParams.get('campaign') || urlParams.get('c');
+      if (campaignParam) {
+        // Will be matched when campaigns load
+      }
+    } catch {
+      // Ignore
+    }
+
     // Poll live donations ticker every 15 seconds
     const interval = setInterval(fetchRecentFeed, 15000);
-    return () => clearInterval(interval);
+
+    // Network status listener (handle offline & hide query parameters)
+    const handleOffline = () => {
+      setIsOffline(true);
+      // Clean query parameters and URL when offline to prevent raw link broken errors
+      try {
+        if (window.location.search || window.location.hash) {
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    const handleOnline = () => {
+      setIsOffline(false);
+      setReconnectedToast(true);
+      setTimeout(() => setReconnectedToast(false), 4000);
+      fetchCampaigns();
+      fetchRecentFeed();
+    };
+
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+
+    // Cross-tab real-time sync (social media live update across windows)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'kusanya_campaigns_v2' && e.newValue) {
+        try {
+          const updated = JSON.parse(e.newValue);
+          if (Array.isArray(updated)) {
+            setCampaigns(updated);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
+
+  // Handle URL deep link to campaign
+  useEffect(() => {
+    if (campaigns.length > 0 && !selectedCampaign) {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const campaignParam = urlParams.get('campaign') || urlParams.get('c');
+        if (campaignParam) {
+          const found = campaigns.find((c) => c.id === campaignParam);
+          if (found) {
+            setSelectedCampaign(found);
+          }
+        }
+      } catch {
+        // Ignore
+      }
+    }
+  }, [campaigns]);
 
   // Filter campaigns
   const filteredCampaigns = campaigns.filter((c) => {
@@ -139,13 +218,25 @@ export default function App() {
     fetchRecentFeed();
   };
 
-  // Handle new campaign creation
+  // Handle new campaign creation (Social media instant post & sync)
   const handleCampaignCreated = (newCamp: Campaign) => {
     setCampaigns((prev) => [newCamp, ...prev]);
     setSelectedCategory('all');
     setSelectedRegion('all');
     setSearchQuery('');
     setSelectedCampaign(newCamp);
+    
+    // Trigger real-time post confirmation banner
+    setNewPostToast({
+      campaign: newCamp,
+      timestamp: newCamp.createdAt || new Date().toISOString()
+    });
+
+    // Auto-scroll gently to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Refresh live stats & tickers
+    fetchRecentFeed();
   };
 
   // Handle admin login click
@@ -176,10 +267,17 @@ export default function App() {
     }
   };
 
-  // Post organizer update
-  const handlePostUpdate = async (campaignId: string, title: string, content: string) => {
+  // Post organizer update / story / receipt
+  const handlePostUpdate = async (
+    campaignId: string,
+    title: string,
+    content: string,
+    author?: string,
+    imageUrl?: string,
+    category?: 'update' | 'milestone' | 'receipt' | 'story' | 'gratitude'
+  ) => {
     try {
-      const data = await api.postUpdate(campaignId, title, content);
+      const data = await api.postUpdate(campaignId, title, content, author, imageUrl, category);
       if (data.success && data.update) {
         setCampaigns((prev) =>
           prev.map((c) => {
@@ -213,6 +311,95 @@ export default function App() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
+
+      {/* Offline Status Safeguard Banner */}
+      {isOffline && (
+        <div className="bg-amber-900 text-amber-100 px-4 py-2.5 border-b border-amber-700/60 shadow-md sticky top-16 z-40 flex items-center justify-between text-xs sm:text-sm">
+          <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <WifiOff className="w-4 h-4 text-amber-300 shrink-0 animate-pulse" />
+              <span>
+                <strong className="text-amber-200">Kusanya Offline Mode:</strong> Browsing local cached fundraisers & Mobile Money directories.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (navigator.onLine) {
+                  setIsOffline(false);
+                  fetchCampaigns();
+                }
+              }}
+              className="px-2.5 py-1 bg-amber-800 hover:bg-amber-700 text-white font-semibold rounded text-xs transition-colors shrink-0"
+            >
+              Retry Connection
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Reconnected Toast */}
+      {reconnectedToast && (
+        <div className="bg-emerald-800 text-white px-4 py-2 border-b border-emerald-600 shadow-md sticky top-16 z-40 flex items-center justify-center text-xs sm:text-sm animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <Wifi className="w-4 h-4 text-emerald-300" />
+            <span className="font-semibold">Back Online — Connected to Kusanya Live Network</span>
+          </div>
+        </div>
+      )}
+
+      {/* Live Post Toast Notification (Social Media Real-Time Publish Bar) */}
+      {newPostToast && (
+        <div className="bg-gradient-to-r from-emerald-900 via-slate-900 to-emerald-950 text-white px-4 py-3 border-y border-emerald-500/40 shadow-xl sticky top-16 z-40 animate-in slide-in-from-top-4 duration-300">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
+                <Sparkles className="w-4 h-4 text-emerald-400 animate-spin" style={{ animationDuration: '3s' }} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-extrabold text-xs sm:text-sm text-emerald-300">🚀 Published Live to Kusanya Database!</span>
+                  <span className="text-[11px] bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30 text-emerald-200">
+                    {formatSocialTimestamp(newPostToast.timestamp).full}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 line-clamp-1 mt-0.5">
+                  <strong>{newPostToast.campaign.title}</strong> in {newPostToast.campaign.district} by {newPostToast.campaign.organizerName}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => setSelectedCampaign(newPostToast.campaign)}
+                className="px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-lg transition-colors cursor-pointer"
+              >
+                View Post
+              </button>
+              <a
+                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                  `🇺🇬 Check out this new fundraiser on Kusanya: "${newPostToast.campaign.title}" in ${newPostToast.campaign.district}, Uganda!\nSupport via MTN/Airtel MoMo: https://kusanya.org/?campaign=${newPostToast.campaign.id}`
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1"
+              >
+                <Share2 className="w-3 h-3" />
+                <span>Share</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => setNewPostToast(null)}
+                className="p-1 text-slate-400 hover:text-white rounded-md transition-colors cursor-pointer"
+                aria-label="Dismiss banner"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Live Ticker Bar */}
       <LiveDonationsTicker
@@ -413,6 +600,11 @@ export default function App() {
           onSave={handleSaveCampaignEdit}
         />
       )}
+
+      {/* Floating Hover Button for Starting a Fundraiser */}
+      <FloatingStartFundraiserButton
+        onClick={() => setIsCreatingCampaign(true)}
+      />
 
       {/* Footer */}
       <Footer
