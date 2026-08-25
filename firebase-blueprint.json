@@ -1,0 +1,111 @@
+{
+  "$schema": "https://raw.githubusercontent.com/firebase/firebase-blueprint/main/schema.json",
+  "entities": {
+    "campaigns": {
+      "title": "Campaign",
+      "description": "Fundraising campaigns in Uganda across medical, education, faith, sacco, and emergency sectors.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "tagline": { "type": "string" },
+        "category": { "type": "string" },
+        "region": { "type": "string" },
+        "district": { "type": "string" },
+        "targetAmount": { "type": "number" },
+        "raisedAmount": { "type": "number" },
+        "currency": { "type": "string" },
+        "story": { "type": "string" },
+        "image": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "beneficiaryName": { "type": "string" },
+        "beneficiaryRelationship": { "type": "string" },
+        "beneficiaryPhone": { "type": "string" },
+        "organizerName": { "type": "string" },
+        "organizerPhone": { "type": "string" },
+        "organizerKycVerified": { "type": "boolean" },
+        "payoutProvider": { "type": "string" },
+        "payoutPhone": { "type": "string" },
+        "donorsCount": { "type": "number" },
+        "featured": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "daysRemaining": { "type": "number" },
+        "status": { "type": "string" },
+        "updates": { "type": "array" }
+      },
+      "required": ["id", "title", "targetAmount", "story", "organizerPhone"]
+    },
+    "updates": {
+      "title": "CampaignUpdate",
+      "description": "Public updates, hospital receipts, stories, and milestones published by fundraiser organizers accessible to all.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "campaignId": { "type": "string" },
+        "campaignTitle": { "type": "string" },
+        "campaignDistrict": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "author": { "type": "string" },
+        "date": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "category": { "type": "string" },
+        "likesCount": { "type": "number" },
+        "pinned": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "campaignId", "title", "content"]
+    },
+    "donations": {
+      "title": "Donation",
+      "description": "Mobile money and online donations with transparency cheer notes.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "campaignId": { "type": "string" },
+        "donorName": { "type": "string" },
+        "isAnonymous": { "type": "boolean" },
+        "amount": { "type": "number" },
+        "provider": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "transactionRef": { "type": "string" },
+        "verified": { "type": "boolean" }
+      },
+      "required": ["id", "campaignId", "amount", "provider"]
+    },
+    "payouts": {
+      "title": "PayoutRequest",
+      "description": "Disbursement records to mobile money accounts.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "campaignId": { "type": "string" },
+        "campaignTitle": { "type": "string" },
+        "amount": { "type": "number" },
+        "provider": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "recipientName": { "type": "string" },
+        "requestedAt": { "type": "string" },
+        "status": { "type": "string" },
+        "disbursementRef": { "type": "string" }
+      },
+      "required": ["id", "campaignId", "amount", "phoneNumber"]
+    }
+  },
+  "firestore": {
+    "/campaigns/{campaignId}": {
+      "entity": "campaigns"
+    },
+    "/updates/{updateId}": {
+      "entity": "updates"
+    },
+    "/donations/{donationId}": {
+      "entity": "donations"
+    },
+    "/payouts/{payoutId}": {
+      "entity": "payouts"
+    }
+  }
+}

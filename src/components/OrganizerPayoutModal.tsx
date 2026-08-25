@@ -127,7 +127,7 @@ export const OrganizerPayoutModal: React.FC<OrganizerPayoutModalProps> = ({
                 Mobile Money Payout Disbursed!
               </h4>
               <p className="text-xs text-slate-600">
-                <strong>{formatUGX(completedPayout.amount)}</strong> has been processed via <strong>{completedPayout.provider.toUpperCase()} MoMo B2C</strong> to <strong>{formatPhoneNumber(completedPayout.phoneNumber)}</strong>.
+                <strong>{formatUGX(completedPayout.amount || 0)}</strong> has been processed via <strong>{(completedPayout.provider || 'mtn').toUpperCase()} MoMo B2C</strong> to <strong>{formatPhoneNumber(completedPayout.phoneNumber || '')}</strong>.
               </p>
 
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-mono text-slate-700 text-left space-y-1.5">

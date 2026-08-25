@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Campaigns collection - read by all, writeable for creation, donation increments, and updates
+    match /campaigns/{campaignId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+      
+      // Updates subcollection
+      match /updates/{updateId} {
+        allow read, write: if true;
+      }
+    }
+
+    // Top-level updates collection - allows all users to access and publish updates globally
+    match /updates/{updateId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // Live Donations & Cheers - public transparency feed
+    match /donations/{donationId} {
+      allow read: if true;
+      allow create, update: if true;
+    }
+
+    // Organizer Payout Requests
+    match /payouts/{payoutId} {
+      allow read, write: if true;
+    }
+  }
+}

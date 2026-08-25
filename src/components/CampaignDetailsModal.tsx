@@ -629,94 +629,103 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
                     </div>
                   ) : (
                     <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
-                      {campaignDonations.map((d) => (
-                        <div key={d.id} className="bg-slate-50 border border-slate-100 rounded-xl p-3 sm:p-4 flex items-start gap-3">
-                          
-                          {/* Provider Icon Avatar */}
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                            d.provider === 'mtn' 
-                              ? 'bg-yellow-400 text-slate-900 font-black border border-yellow-500' 
-                              : d.provider === 'airtel' 
-                              ? 'bg-red-600 text-white font-black' 
-                              : d.provider === 'visa' || d.provider === 'card'
-                              ? 'bg-blue-700 text-white font-black'
-                              : d.provider === 'paypal'
-                              ? 'bg-sky-600 text-white font-black'
-                              : 'bg-slate-800 text-white'
-                          }`}>
-                            {d.provider === 'mtn' ? 'MTN' : d.provider === 'airtel' ? 'AIR' : d.provider === 'visa' || d.provider === 'card' ? 'VISA' : d.provider === 'paypal' ? 'PP' : 'UG'}
-                          </div>
+                      {campaignDonations.map((d) => {
+                        const prov = d?.provider || 'mtn';
+                        const provLabel =
+                          prov === 'visa' || prov === 'card'
+                            ? 'Visa Card'
+                            : prov === 'paypal'
+                            ? 'PayPal Global'
+                            : `${prov.toUpperCase()} MoMo`;
 
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="font-bold text-sm text-slate-900 truncate">
-                                {d.isAnonymous ? 'Anonymous Well-Wisher' : d.donorName}
-                              </span>
-                              <span className="font-black text-sm text-emerald-800 shrink-0">
-                                {formatUGX(d.amount)}
-                              </span>
+                        return (
+                          <div key={d.id} className="bg-slate-50 border border-slate-100 rounded-xl p-3 sm:p-4 flex items-start gap-3">
+                            
+                            {/* Provider Icon Avatar */}
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                              prov === 'mtn' 
+                                ? 'bg-yellow-400 text-slate-900 font-black border border-yellow-500' 
+                                : prov === 'airtel' 
+                                ? 'bg-red-600 text-white font-black' 
+                                : prov === 'visa' || prov === 'card'
+                                ? 'bg-blue-700 text-white font-black'
+                                : prov === 'paypal'
+                                ? 'bg-sky-600 text-white font-black'
+                                : 'bg-slate-800 text-white'
+                            }`}>
+                              {prov === 'mtn' ? 'MTN' : prov === 'airtel' ? 'AIR' : prov === 'visa' || prov === 'card' ? 'VISA' : prov === 'paypal' ? 'PP' : 'UG'}
                             </div>
 
-                            {d.message && (
-                              <p className="text-xs text-slate-700 mt-1 italic bg-white p-2 rounded-lg border border-slate-200">
-                                “{d.message}”
-                              </p>
-                            )}
-
-                            <div className="flex flex-wrap items-center justify-between gap-2 mt-1.5 text-[11px] text-slate-500">
-                              <div className="flex items-center gap-2">
-                                <span>{timeAgo(d.timestamp)}</span>
-                                <span>•</span>
-                                <span className="uppercase text-[10px] font-semibold text-slate-600">
-                                  {d.provider === 'visa' || d.provider === 'card' ? 'Visa Card' : d.provider === 'paypal' ? 'PayPal Global' : `${d.provider.toUpperCase()} MoMo`} ({d.transactionRef})
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-bold text-sm text-slate-900 truncate">
+                                  {d.isAnonymous ? 'Anonymous Well-Wisher' : d.donorName || 'Generous Giver'}
+                                </span>
+                                <span className="font-black text-sm text-emerald-800 shrink-0">
+                                  {formatUGX(d.amount || 0)}
                                 </span>
                               </div>
 
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const txMock: PaymentTransaction = {
-                                    id: d.id,
-                                    reference: d.transactionRef,
-                                    transactionRef: d.transactionRef,
-                                    campaignId: campaign.id,
-                                    donorName: d.donorName,
-                                    donorPhone: '',
-                                    phoneNumber: '',
-                                    amount: d.amount,
-                                    provider: d.provider,
-                                    isAnonymous: d.isAnonymous,
-                                    message: d.message || '',
-                                    status: 'completed',
-                                    platformFee: Math.round(d.amount * 0.05),
-                                    feePercentage: 5,
-                                    netBeneficiaryAmount: d.amount - Math.round(d.amount * 0.05),
-                                    ussdPrompt: '',
-                                    networkRef: d.transactionRef,
-                                    networkTransactionId: d.transactionRef,
-                                    createdAt: d.timestamp,
-                                    receiptNumber: `RCP-${d.transactionRef}`,
-                                  };
-                                  generateDonationReceiptPDF({
-                                    transaction: txMock,
-                                    campaignTitle: campaign.title,
-                                    campaignCategory: campaign.category,
-                                    organizerName: campaign.organizerName,
-                                    beneficiaryName: campaign.beneficiaryName,
-                                    beneficiaryPhone: campaign.beneficiaryPhone || campaign.organizerPhone,
-                                  });
-                                }}
-                                className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 transition-colors cursor-pointer"
-                                title="Download PDF Receipt for this donation"
-                              >
-                                <Download className="w-3 h-3" />
-                                <span>PDF Receipt</span>
-                              </button>
+                              {d.message && (
+                                <p className="text-xs text-slate-700 mt-1 italic bg-white p-2 rounded-lg border border-slate-200">
+                                  “{d.message}”
+                                </p>
+                              )}
+
+                              <div className="flex flex-wrap items-center justify-between gap-2 mt-1.5 text-[11px] text-slate-500">
+                                <div className="flex items-center gap-2">
+                                  <span>{timeAgo(d.timestamp || new Date().toISOString())}</span>
+                                  <span>•</span>
+                                  <span className="uppercase text-[10px] font-semibold text-slate-600">
+                                    {provLabel} ({d.transactionRef || 'UG-REF'})
+                                  </span>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const txMock: PaymentTransaction = {
+                                      id: d.id,
+                                      reference: d.transactionRef || `REF-${d.id}`,
+                                      transactionRef: d.transactionRef || `REF-${d.id}`,
+                                      campaignId: campaign.id,
+                                      donorName: d.donorName || 'Generous Giver',
+                                      donorPhone: '',
+                                      phoneNumber: '',
+                                      amount: d.amount || 0,
+                                      provider: prov,
+                                      isAnonymous: d.isAnonymous || false,
+                                      message: d.message || '',
+                                      status: 'completed',
+                                      platformFee: Math.round((d.amount || 0) * 0.05),
+                                      feePercentage: 5,
+                                      netBeneficiaryAmount: (d.amount || 0) - Math.round((d.amount || 0) * 0.05),
+                                      ussdPrompt: '',
+                                      networkRef: d.transactionRef || `REF-${d.id}`,
+                                      networkTransactionId: d.transactionRef || `REF-${d.id}`,
+                                      createdAt: d.timestamp || new Date().toISOString(),
+                                      receiptNumber: `RCP-${d.transactionRef || d.id}`,
+                                    };
+                                    generateDonationReceiptPDF({
+                                      transaction: txMock,
+                                      campaignTitle: campaign.title,
+                                      campaignCategory: campaign.category,
+                                      organizerName: campaign.organizerName,
+                                      beneficiaryName: campaign.beneficiaryName,
+                                      beneficiaryPhone: campaign.beneficiaryPhone || campaign.organizerPhone,
+                                    });
+                                  }}
+                                  className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 transition-colors cursor-pointer"
+                                  title="Download PDF Receipt for this donation"
+                                >
+                                  <Download className="w-3 h-3" />
+                                  <span>PDF Receipt</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
-
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

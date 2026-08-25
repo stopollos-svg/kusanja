@@ -1035,7 +1035,7 @@ export const MobileMoneyModal: React.FC<MobileMoneyModalProps> = ({
                     ? 'Visa Card (3D Secure)' 
                     : transaction.provider === 'paypal' 
                     ? 'PayPal Global Giving' 
-                    : `${transaction.provider.toUpperCase()} Mobile Money`}
+                    : `${(transaction.provider || 'mtn').toUpperCase()} Mobile Money`}
                 </span>
               </div>
 

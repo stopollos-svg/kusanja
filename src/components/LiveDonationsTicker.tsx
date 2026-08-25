@@ -23,7 +23,18 @@ export const LiveDonationsTicker: React.FC<LiveDonationsTickerProps> = ({
 
   if (!donations || donations.length === 0) return null;
 
-  const current = donations[currentIndex];
+  const safeIndex = currentIndex >= 0 && currentIndex < donations.length ? currentIndex : 0;
+  const current = donations[safeIndex];
+
+  if (!current) return null;
+
+  const currentProvider = current.provider || 'mtn';
+  const providerLabel =
+    currentProvider === 'visa' || currentProvider === 'card'
+      ? 'Visa Card'
+      : currentProvider === 'paypal'
+      ? 'PayPal'
+      : `${currentProvider.toUpperCase()} MoMo`;
 
   return (
     <div className="bg-slate-900 text-slate-200 border-b border-slate-800 py-2 px-4 shadow-inner">
@@ -38,23 +49,23 @@ export const LiveDonationsTicker: React.FC<LiveDonationsTickerProps> = ({
         {/* Animated Donor Item */}
         <div className="flex-1 truncate flex items-center gap-2">
           <span className={`inline-block w-2 h-2 rounded-full ${
-            current.provider === 'mtn' 
+            currentProvider === 'mtn' 
               ? 'bg-yellow-400' 
-              : current.provider === 'airtel' 
+              : currentProvider === 'airtel' 
               ? 'bg-red-500' 
-              : current.provider === 'visa' || current.provider === 'card'
+              : currentProvider === 'visa' || currentProvider === 'card'
               ? 'bg-blue-500'
               : 'bg-sky-400'
           }`}></span>
           <span className="font-bold text-white">
-            {current.isAnonymous ? 'An Anonymous Giver' : current.donorName}
+            {current.isAnonymous ? 'An Anonymous Giver' : current.donorName || 'Generous Giver'}
           </span>
           <span className="text-slate-400">just sent</span>
           <span className="font-black text-emerald-400 bg-slate-800 px-2 py-0.5 rounded text-[11px]">
-            {formatUGX(current.amount)}
+            {formatUGX(current.amount || 0)}
           </span>
           <span className="text-slate-400 hidden sm:inline">
-            via {current.provider === 'visa' || current.provider === 'card' ? 'Visa Card' : current.provider === 'paypal' ? 'PayPal' : `${current.provider.toUpperCase()} MoMo`}
+            via {providerLabel}
           </span>
           {current.message && (
             <span className="text-slate-400 italic hidden md:inline truncate max-w-xs">
@@ -65,7 +76,7 @@ export const LiveDonationsTicker: React.FC<LiveDonationsTickerProps> = ({
 
         {/* Timestamp */}
         <div className="shrink-0 text-[11px] text-slate-500">
-          {timeAgo(current.timestamp)}
+          {timeAgo(current.timestamp || new Date().toISOString())}
         </div>
 
       </div>

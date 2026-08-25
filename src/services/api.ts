@@ -1,4 +1,13 @@
 import { Campaign, CampaignUpdate, DonorCheer, MoMoProvider, PaymentTransaction, PayoutRequest } from '../types';
+import {
+  publishFundraiserUpdate,
+  likeUpdateInFirestore,
+  deleteUpdateInFirestore,
+  saveCampaignToFirestore,
+  updateCampaignInFirestore,
+  saveDonationToFirestore,
+  savePayoutToFirestore,
+} from './firestoreService';
 
 // Default Seed Campaigns in case server is 404/offline or hosted as static SPA
 export const DEFAULT_SEED_CAMPAIGNS: Campaign[] = [
@@ -757,6 +766,9 @@ export const api = {
 
     const current = getStoredCampaigns();
     saveStoredCampaigns([newCamp, ...current]);
+    // Save to Cloud Firestore
+    saveCampaignToFirestore(newCamp).catch((e) => console.warn('Firestore async save failed:', e));
+
     return { success: true, campaign: newCamp };
   },
 
@@ -771,6 +783,29 @@ export const api = {
     imageUrl?: string,
     category: 'update' | 'milestone' | 'receipt' | 'story' | 'gratitude' = 'update'
   ): Promise<{ success: boolean; update: CampaignUpdate }> {
+    const current = getStoredCampaigns();
+    const campaign = current.find((c) => c.id === campaignId);
+
+    // Save to Cloud Firestore (both updates collection and campaign document)
+    let firestoreResult: { success: boolean; update: CampaignUpdate } | null = null;
+    try {
+      firestoreResult = await publishFundraiserUpdate(
+        campaignId,
+        title,
+        content,
+        author || campaign?.organizerName,
+        imageUrl,
+        category,
+        {
+          title: campaign?.title,
+          district: campaign?.district,
+          region: campaign?.region,
+        }
+      );
+    } catch (err) {
+      console.warn('Firestore publish error:', err);
+    }
+
     try {
       const res = await fetch(`/api/campaigns/${campaignId}/updates`, {
         method: 'POST',
@@ -788,7 +823,7 @@ export const api = {
       console.warn('API update failed. Saving update locally.', err);
     }
 
-    const update: CampaignUpdate = {
+    const update: CampaignUpdate = firestoreResult?.update || {
       id: `upd-${Date.now()}`,
       date: new Date().toISOString().split('T')[0],
       title,
@@ -800,7 +835,6 @@ export const api = {
       pinned: false,
     };
 
-    const current = getStoredCampaigns();
     const updated = current.map((c) => (c.id === campaignId ? { ...c, updates: [update, ...c.updates] } : c));
     saveStoredCampaigns(updated);
 
@@ -811,6 +845,7 @@ export const api = {
    * Like / Cheer a specific update post
    */
   async likeUpdate(campaignId: string, updateId: string): Promise<{ success: boolean; likesCount: number }> {
+    likeUpdateInFirestore(campaignId, updateId).catch((e) => console.warn('Firestore like failed:', e));
     const current = getStoredCampaigns();
     let newLikes = 1;
     const updated = current.map((c) => {
@@ -834,6 +869,7 @@ export const api = {
    * Delete or moderate an update post
    */
   async deleteUpdate(campaignId: string, updateId: string): Promise<{ success: boolean }> {
+    deleteUpdateInFirestore(campaignId, updateId).catch((e) => console.warn('Firestore delete failed:', e));
     const current = getStoredCampaigns();
     const updated = current.map((c) => {
       if (c.id === campaignId) {
@@ -1005,6 +1041,8 @@ export const api = {
     };
     const donList = getStoredDonations();
     saveStoredDonations([cheer, ...donList]);
+    // Save to Cloud Firestore
+    saveDonationToFirestore(cheer, newRaised).catch((e) => console.warn('Firestore donation save failed:', e));
 
     return { success: true, transaction: tx, newRaisedAmount: newRaised };
   },
@@ -1029,6 +1067,7 @@ export const api = {
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.payout) {
+          savePayoutToFirestore(data.payout).catch((e) => console.warn('Firestore payout save failed:', e));
           return data;
         }
       }
@@ -1052,6 +1091,7 @@ export const api = {
       disbursementRef: `B2C-UGX-${Math.floor(100000 + Math.random() * 900000)}`,
     };
 
+    savePayoutToFirestore(payout).catch((e) => console.warn('Firestore payout save failed:', e));
     return { success: true, payout };
   },
 
@@ -1136,6 +1176,9 @@ export const api = {
       }
       return c;
     });
+
+    // Sync to Cloud Firestore
+    updateCampaignInFirestore(id, updates).catch((e) => console.warn('Firestore updateCampaign failed:', e));
 
     if (updatedObj) {
       saveStoredCampaigns(updatedList);

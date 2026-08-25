@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { formatSocialTimestamp } from './utils/formatters';
 import { getCampaignUrgencyInfo } from './utils/urgency';
+import { subscribeToCampaigns, subscribeToDonations, seedInitialFirestoreDataIfEmpty } from './services/firestoreService';
 
 export default function App() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -106,15 +107,39 @@ export default function App() {
   };
 
   useEffect(() => {
+    let unsubscribeCampaigns: (() => void) | undefined;
+    let unsubscribeDonations: (() => void) | undefined;
+
     const init = async () => {
       setIsLoading(true);
+      // Seed Cloud Firestore if empty
+      await seedInitialFirestoreDataIfEmpty();
       await Promise.all([fetchCampaigns(), fetchRecentFeed()]);
       setIsLoading(false);
+
+      // Subscribe to real-time Firestore updates
+      unsubscribeCampaigns = subscribeToCampaigns((firestoreCampaigns) => {
+        if (firestoreCampaigns && firestoreCampaigns.length > 0) {
+          setCampaigns(firestoreCampaigns);
+          const totalRaised = firestoreCampaigns.reduce((acc, c) => acc + (c.raisedAmount || 0), 0);
+          const donors = firestoreCampaigns.reduce((acc, c) => acc + (c.donorsCount || 0), 0);
+          const districts = Array.from(new Set(firestoreCampaigns.map((c) => c.district))).length;
+          setTotalRaisedUGX(totalRaised);
+          setTotalDonors(donors);
+          setDistrictsCount(districts);
+        }
+      });
+
+      unsubscribeDonations = subscribeToDonations((firestoreDonations) => {
+        if (firestoreDonations && firestoreDonations.length > 0) {
+          setRecentDonations(firestoreDonations);
+        }
+      });
     };
     init();
 
-    // Poll live donations ticker every 15 seconds
-    const interval = setInterval(fetchRecentFeed, 15000);
+    // Poll live donations ticker as secondary heartbeat
+    const interval = setInterval(fetchRecentFeed, 20000);
 
     // Network status listener (handle offline & hide query parameters)
     const handleOffline = () => {
@@ -155,6 +180,8 @@ export default function App() {
     window.addEventListener('storage', handleStorageChange);
 
     return () => {
+      if (unsubscribeCampaigns) unsubscribeCampaigns();
+      if (unsubscribeDonations) unsubscribeDonations();
       clearInterval(interval);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('online', handleOnline);
