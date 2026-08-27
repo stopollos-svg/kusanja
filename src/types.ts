@@ -23,6 +23,10 @@ export interface DonorCheer {
   timestamp: string;
   transactionRef: string;
   verified: boolean;
+  campaignTitle?: string;
+  campaignDistrict?: string;
+  campaignTarget?: number;
+  campaignRaised?: number;
 }
 
 export interface Campaign {
@@ -35,6 +39,8 @@ export interface Campaign {
   district: string;
   targetAmount: number; // in UGX
   raisedAmount: number; // in UGX
+  amountDonatedMinusTarget?: number; // Database calculation: raisedAmount - targetAmount
+  remainingAmount?: number; // Database calculation: Math.max(0, targetAmount - raisedAmount)
   currency: string; // 'UGX'
   story: string;
   image: string;
@@ -85,9 +91,11 @@ export interface PaymentTransaction {
   donorPhone: string;
   phoneNumber?: string;
   amount: number;
-  platformFee: number; // 5% platform maintenance fee
-  feePercentage: number; // 5
-  netBeneficiaryAmount: number; // 95% to cause
+  platformFee: number; // 0 (Zero deductions)
+  feePercentage: number; // 0
+  netBeneficiaryAmount: number; // 100% to cause (zero deductions)
+  amountDonatedMinusTarget?: number; // Updated raised amount - targetAmount
+  remainingTargetBalance?: number; // Remaining target balance after donation
   provider: MoMoProvider;
   isAnonymous: boolean;
   message?: string;
@@ -99,6 +107,9 @@ export interface PaymentTransaction {
   createdAt: string;
   completedAt?: string;
   receiptNumber: string;
+  campaignTitle?: string;
+  campaignTarget?: number;
+  campaignRaised?: number;
 }
 
 export interface PayoutRequest {
@@ -124,9 +135,11 @@ export interface AdminUser {
 export interface AdminAnalytics {
   totalRaisedUGX: number;
   totalTargetUGX: number;
+  totalAmountMinusTargetUGX: number; // Database calculation: totalRaisedUGX - totalTargetUGX
+  totalRemainingUGX: number; // Database calculation: Math.max(0, totalTargetUGX - totalRaisedUGX)
   totalDonors: number;
-  totalPlatformFeesUGX: number;
-  totalBeneficiaryFundsUGX: number;
+  totalPlatformFeesUGX: number; // 0 (Zero deductions)
+  totalBeneficiaryFundsUGX: number; // 100% of donations
   activeCampaignsCount: number;
   featuredCampaignsCount: number;
   completedCampaignsCount: number;

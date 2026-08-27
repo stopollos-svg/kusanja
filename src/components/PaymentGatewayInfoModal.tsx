@@ -102,18 +102,18 @@ export const PaymentGatewayInfoModal: React.FC<PaymentGatewayInfoModalProps> = (
             </div>
           </div>
 
-          {/* Section 2: Transparent 5% Maintenance Fee */}
+          {/* Section 2: Zero Deductions Model */}
           <div className="space-y-2 pt-2 border-t border-slate-200">
             <h4 className="font-bold text-slate-950 uppercase tracking-wider text-xs flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>2. Transparent 5% Maintenance & Telecom Fee</span>
+              <span>2. Zero Deductions Model (100% Direct Impact)</span>
             </h4>
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 space-y-1.5 text-xs text-emerald-950">
               <p>
-                <strong>95% of every donation goes directly to the beneficiary</strong> or verified cause organizer.
+                <strong>100% of every donation goes directly to the beneficiary</strong> or verified cause organizer with zero platform deductions.
               </p>
               <p className="text-emerald-800">
-                A transparent 5% platform maintenance fee is deducted automatically at transaction time to cover telecom SMS gateway notifications, USSD push network charges, server hosting, and security audits.
+                Kusanya operates with 0% platform deductions. Every donation updates the real-time calculation of total amount donated minus total target value, ensuring absolute financial transparency for all donors and beneficiaries.
               </p>
             </div>
           </div>

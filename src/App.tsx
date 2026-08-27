@@ -464,7 +464,14 @@ export default function App() {
       )}
 
       {/* Live Ticker Bar */}
-      <LiveDonationsTicker donations={recentDonations} />
+      <LiveDonationsTicker 
+        donations={recentDonations} 
+        campaigns={campaigns}
+        onSelectDonationCampaign={(campaignId) => {
+          const camp = campaigns.find((c) => c.id === campaignId || c.slug === campaignId);
+          if (camp) setSelectedCampaign(camp);
+        }}
+      />
 
       {/* Hero Spotlight on Top */}
       <FeaturedHeroSpotlight

@@ -4,6 +4,7 @@ import {
   ArrowUpRight, 
   BarChart3, 
   Building2, 
+  Calculator,
   Check, 
   CheckCircle2, 
   ChevronRight, 
@@ -41,6 +42,7 @@ import { AdminAnalytics, AdminUser, Campaign, DonorCheer } from '../types';
 import { api } from '../services/api';
 import { KusanyaBrandLogo } from './KusanyaBrandLogo';
 import { calculateCampaignActivity } from '../utils/activity';
+import { formatUGX, formatSignedUGX, calculateDonationMinusTarget } from '../utils/formatters';
 
 interface AdminDashboardModalProps {
   isOpen: boolean;
@@ -102,9 +104,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const totalRaised = campaigns.reduce((acc, c) => acc + (c.raisedAmount || 0), 0);
   const totalGoal = campaigns.reduce((acc, c) => acc + (c.targetAmount || 0), 0);
   const totalDonors = campaigns.reduce((acc, c) => acc + (c.donorsCount || 0), 0);
-  const platformFee = Math.round(totalRaised * 0.05); // 5%
-  const netDisbursements = totalRaised - platformFee; // 95%
-  const overallProgress = totalGoal > 0 ? Math.min(Math.round((totalRaised / totalGoal) * 100), 100) : 0;
+  const totalDonatedMinusTarget = totalRaised - totalGoal;
   const featuredCount = campaigns.filter(c => c.featured).length;
 
   const handleToggleFeatured = async (campaign: Campaign, e: React.MouseEvent) => {
@@ -314,51 +314,45 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     UGX {totalRaised.toLocaleString()}
                   </div>
                   <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Goal: UGX {totalGoal.toLocaleString()}</span>
-                    <span className="text-emerald-400 font-bold">{overallProgress}% funded</span>
-                  </div>
-                  <div className="w-full bg-slate-700/60 h-1.5 rounded-full overflow-hidden mt-3">
-                    <div 
-                      className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full"
-                      style={{ width: `${overallProgress}%` }}
-                    />
+                    <span>Total Target: UGX {totalGoal.toLocaleString()}</span>
                   </div>
                 </div>
 
-                {/* 5% Platform Maintenance Fees */}
+                {/* Amount Donated Minus Total Target Value */}
                 <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-800/90 to-slate-900 border border-slate-700/80 shadow-lg relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-black uppercase tracking-wider text-amber-400">
-                      5% Platform Fee Reserve
+                      Donations − Target
                     </span>
                     <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
-                      <Percent className="w-4 h-4" />
+                      <Calculator className="w-4 h-4" />
                     </div>
                   </div>
-                  <div className="text-2xl font-black text-amber-300 mb-1">
-                    UGX {platformFee.toLocaleString()}
+                  <div className={`text-2xl font-black mb-1 ${totalDonatedMinusTarget >= 0 ? 'text-emerald-400' : 'text-amber-300'}`}>
+                    {formatSignedUGX(totalDonatedMinusTarget)}
                   </div>
                   <p className="text-xs text-slate-400">
-                    Dedicated to SMS gateway, server uptime & KYC verification
+                    Total amount donated minus total target value across all campaigns
                   </p>
                 </div>
 
-                {/* 95% Net Beneficiary Payouts */}
+                {/* 100% Direct Payouts (Zero Deductions) */}
                 <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-800/90 to-slate-900 border border-slate-700/80 shadow-lg relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/10 rounded-full blur-2xl pointer-events-none" />
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-black uppercase tracking-wider text-teal-400">
-                      95% Net Direct Payouts
+                      100% Direct to Causes
                     </span>
                     <div className="p-2 rounded-xl bg-teal-500/20 text-teal-400">
-                      <ArrowUpRight className="w-4 h-4" />
+                      <ShieldCheck className="w-4 h-4" />
                     </div>
                   </div>
                   <div className="text-2xl font-black text-teal-300 mb-1">
-                    UGX {netDisbursements.toLocaleString()}
+                    UGX {totalRaised.toLocaleString()}
                   </div>
                   <p className="text-xs text-slate-400">
-                    Disbursed directly via MTN MoMo & Airtel Money B2C
+                    Zero platform deductions — 100% credited to verified causes
                   </p>
                 </div>
 
@@ -573,8 +567,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     </div>
                   ) : (
                     filteredCampaigns.map((camp) => {
-                      const percent = Math.min(Math.round((camp.raisedAmount / camp.targetAmount) * 100), 100);
                       const act = calculateCampaignActivity(camp);
+                      const { amountDonatedMinusTarget, isGoalMet } = calculateDonationMinusTarget(camp.raisedAmount, camp.targetAmount);
                       return (
                         <div 
                           key={camp.id} 
@@ -637,21 +631,26 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                             </div>
                           </div>
 
-                          {/* Progress & Financial Bar */}
-                          <div className="w-full md:w-56 shrink-0 space-y-1.5">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-extrabold text-emerald-400">
-                                UGX {(camp.raisedAmount / 1000000).toFixed(2)}M
-                              </span>
-                              <span className="text-slate-400 text-[11px]">
-                                / {(camp.targetAmount / 1000000).toFixed(1)}M ({percent}%)
-                              </span>
+                          {/* Financial Target Calculation Box */}
+                          <div className="w-full md:w-64 shrink-0 bg-slate-900/90 border border-slate-700/80 rounded-xl p-2.5 space-y-1">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="text-slate-400">Donated:</span>
+                              <span className="font-bold text-white">UGX {camp.raisedAmount.toLocaleString()}</span>
                             </div>
-                            <div className="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full rounded-full ${camp.featured ? 'bg-gradient-to-r from-amber-500 to-emerald-400' : 'bg-emerald-500'}`}
-                                style={{ width: `${percent}%` }}
-                              />
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="text-slate-400">Target Goal:</span>
+                              <span className="font-bold text-slate-300">UGX {camp.targetAmount.toLocaleString()}</span>
+                            </div>
+                            <div className="pt-1 border-t border-slate-800 flex items-center justify-between text-xs">
+                              <span className="font-extrabold text-slate-300 flex items-center gap-1">
+                                <Calculator className="w-3 h-3 text-emerald-400" />
+                                Donated − Target:
+                              </span>
+                              <span className={`font-black ${
+                                isGoalMet ? 'text-emerald-400' : 'text-amber-400'
+                              }`}>
+                                {formatSignedUGX(amountDonatedMinusTarget)}
+                              </span>
                             </div>
                           </div>
 

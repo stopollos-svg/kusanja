@@ -27,10 +27,12 @@ import {
   Tag,
   ThumbsUp,
   Users, 
-  X 
+  X,
+  Calculator,
+  ArrowRight
 } from 'lucide-react';
 import { Campaign, DonorCheer, PaymentTransaction } from '../types';
-import { formatUGX, timeAgo, formatSocialTimestamp } from '../utils/formatters';
+import { formatUGX, formatSignedUGX, calculateDonationMinusTarget, timeAgo, formatSocialTimestamp } from '../utils/formatters';
 import { generateDonationReceiptPDF } from '../utils/pdfReceiptGenerator';
 import { getCampaignUrgencyInfo } from '../utils/urgency';
 
@@ -85,7 +87,7 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
     : [campaign.image];
 
   const activeImage = galleryImages[currentImageIndex] || campaign.image;
-  const percentage = Math.min(100, Math.round((campaign.raisedAmount / campaign.targetAmount) * 100));
+  const { amountDonatedMinusTarget, remainingAmount } = calculateDonationMinusTarget(campaign.raisedAmount, campaign.targetAmount);
   const campaignDonations = donations.filter(d => d.campaignId === campaign.id);
   const urgency = getCampaignUrgencyInfo(campaign);
 
@@ -311,7 +313,7 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
                     {urgency.badgeLabel}
                   </span>
                   <span className="text-xs font-semibold text-slate-700">
-                    {percentage}% Funded • {campaign.daysRemaining} days remaining
+                    Remaining: {formatUGX(remainingAmount)} • {campaign.daysRemaining} days left
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm font-bold leading-relaxed">
@@ -661,9 +663,16 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
                                 <span className="font-bold text-sm text-slate-900 truncate">
                                   {d.isAnonymous ? 'Anonymous Well-Wisher' : d.donorName || 'Generous Giver'}
                                 </span>
-                                <span className="font-black text-sm text-emerald-800 shrink-0">
-                                  {formatUGX(d.amount || 0)}
-                                </span>
+                                <div className="text-right shrink-0">
+                                  <span className="font-black text-sm text-emerald-800 block">
+                                    {formatUGX(d.amount || 0)}
+                                  </span>
+                                  {campaign.targetAmount > 0 && (
+                                    <span className="text-[10px] text-slate-500 font-semibold block">
+                                      Donated − Target: {formatSignedUGX((d.amount || 0) - campaign.targetAmount)}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
 
                               {d.message && (
@@ -697,14 +706,19 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
                                       isAnonymous: d.isAnonymous || false,
                                       message: d.message || '',
                                       status: 'completed',
-                                      platformFee: Math.round((d.amount || 0) * 0.05),
-                                      feePercentage: 5,
-                                      netBeneficiaryAmount: (d.amount || 0) - Math.round((d.amount || 0) * 0.05),
+                                      platformFee: 0,
+                                      feePercentage: 0,
+                                      netBeneficiaryAmount: d.amount || 0,
+                                      amountDonatedMinusTarget,
+                                      remainingTargetBalance: remainingAmount,
                                       ussdPrompt: '',
                                       networkRef: d.transactionRef || `REF-${d.id}`,
                                       networkTransactionId: d.transactionRef || `REF-${d.id}`,
                                       createdAt: d.timestamp || new Date().toISOString(),
                                       receiptNumber: `RCP-${d.transactionRef || d.id}`,
+                                      campaignTitle: campaign.title,
+                                      campaignTarget: campaign.targetAmount,
+                                      campaignRaised: campaign.raisedAmount,
                                     };
                                     generateDonationReceiptPDF({
                                       transaction: txMock,
@@ -713,6 +727,8 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
                                       organizerName: campaign.organizerName,
                                       beneficiaryName: campaign.beneficiaryName,
                                       beneficiaryPhone: campaign.beneficiaryPhone || campaign.organizerPhone,
+                                      targetAmount: campaign.targetAmount,
+                                      raisedAmount: campaign.raisedAmount,
                                     });
                                   }}
                                   className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 transition-colors cursor-pointer"
@@ -1036,22 +1052,42 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
               {/* Financial Box */}
               <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-xl space-y-4">
                 
-                <div>
-                  <span className="text-2xl sm:text-3xl font-black text-slate-900 block">
-                    {formatUGX(campaign.raisedAmount)}
-                  </span>
-                  <div className="flex items-center justify-between text-xs text-slate-600 mt-1">
-                    <span>raised of <strong>{formatUGX(campaign.targetAmount)}</strong> goal</span>
-                    <span className="font-bold text-emerald-600">{percentage}%</span>
+                {/* Clean Gross Financial Summary */}
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-0.5">Total Amount Donated</span>
+                    <span className="text-2xl sm:text-3xl font-black text-slate-900 block tracking-tight">
+                      {formatUGX(campaign.raisedAmount)}
+                    </span>
                   </div>
-                </div>
 
-                {/* Progress bar */}
-                <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                    style={{ width: `${percentage}%` }}
-                  ></div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-600 font-medium">Total Target Goal:</span>
+                      <span className="font-bold text-slate-900">{formatUGX(campaign.targetAmount)}</span>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
+                      <span className="text-slate-700 font-bold flex items-center gap-1">
+                        <Calculator className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Donated − Target:</span>
+                      </span>
+                      <span className={`font-mono font-black text-sm px-2 py-0.5 rounded ${
+                        amountDonatedMinusTarget >= 0 
+                          ? 'bg-emerald-100 text-emerald-800' 
+                          : 'bg-amber-100 text-amber-900'
+                      }`}>
+                        {formatSignedUGX(amountDonatedMinusTarget)}
+                      </span>
+                    </div>
+
+                    {remainingAmount > 0 && (
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                        <span>Balance to Reach Target:</span>
+                        <span className="font-semibold text-slate-700">{formatUGX(remainingAmount)}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Donors & Days left stats */}
@@ -1075,9 +1111,9 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
                   <span>DONATE (MOMO, VISA, PAYPAL)</span>
                 </button>
 
-                {/* Platform Maintenance Transparent Notice */}
-                <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-2.5 text-[11px] text-emerald-900 text-center">
-                  <strong>Transparent 5% Model:</strong> 95% goes directly to beneficiary. 5% covers telecoms and app maintenance.
+                {/* Zero Deductions Notice */}
+                <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-2.5 text-[11px] text-emerald-900 text-center">
+                  <strong>Zero Deductions:</strong> 100% of every donation goes directly to the campaign beneficiary.
                 </div>
 
                 {/* Accepted Payment Provider Badges */}
@@ -1176,10 +1212,10 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({
         <div className="lg:hidden sticky bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/90 p-3 sm:p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] flex items-center justify-between gap-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="min-w-0 flex-1">
             <div className="text-xs font-bold text-slate-900 truncate">
-              {formatUGX(campaign.raisedAmount)}
+              {formatUGX(campaign.raisedAmount)} <span className="text-[10px] text-slate-500 font-normal">donated</span>
             </div>
-            <div className="text-[10px] text-slate-500 truncate">
-              {percentage}% of {formatUGX(campaign.targetAmount)}
+            <div className="text-[10px] text-slate-600 truncate font-mono">
+              Donated − Target: {formatSignedUGX(amountDonatedMinusTarget)}
             </div>
           </div>
 

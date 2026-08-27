@@ -1,14 +1,14 @@
 import { Campaign } from '../types';
+import { formatUGX } from './formatters';
 
 export interface CampaignUrgencyInfo {
   isUrgent: boolean;
   isEndingSoon: boolean; // Ending within 48 hours (daysRemaining <= 2)
-  isNearTarget: boolean; // Reached >= 80% of goal
+  isNearTarget: boolean; // Close to target
   urgencyType: 'critical_both' | 'ending_48h' | 'near_target' | 'none';
   badgeLabel: string;
   badgeSubtext: string;
   hoursRemainingApprox: number;
-  percentage: number;
   remainingAmountUGX: number;
   severity: 'critical' | 'high' | 'moderate' | 'none';
 }
@@ -16,13 +16,9 @@ export interface CampaignUrgencyInfo {
 /**
  * Calculates whether a campaign qualifies as urgent:
  * 1. Ending within the next 48 hours (daysRemaining <= 2 or <= 48h)
- * 2. Reaching its target (>= 80% raised and remaining amount is within final reach)
+ * 2. Reaching its target (remaining amount is within final reach)
  */
 export function getCampaignUrgencyInfo(campaign: Campaign): CampaignUrgencyInfo {
-  const percentage = campaign.targetAmount > 0 
-    ? Math.round((campaign.raisedAmount / campaign.targetAmount) * 100) 
-    : 0;
-
   const remainingAmountUGX = Math.max(0, campaign.targetAmount - campaign.raisedAmount);
 
   // Ending within 48 hours (daysRemaining <= 2)
@@ -33,8 +29,8 @@ export function getCampaignUrgencyInfo(campaign: Campaign): CampaignUrgencyInfo 
     ? Math.max(4, Math.round(campaign.daysRemaining * 24)) 
     : (campaign.daysRemaining || 30) * 24;
 
-  // Reached at least 80% of target
-  const isNearTarget = percentage >= 80 && remainingAmountUGX > 0;
+  // Reached near target (remaining amount <= 20% of target or <= 500,000 UGX)
+  const isNearTarget = (campaign.targetAmount > 0 && remainingAmountUGX > 0 && remainingAmountUGX <= campaign.targetAmount * 0.2);
 
   let isUrgent = false;
   let urgencyType: 'critical_both' | 'ending_48h' | 'near_target' | 'none' = 'none';
@@ -46,8 +42,8 @@ export function getCampaignUrgencyInfo(campaign: Campaign): CampaignUrgencyInfo 
     isUrgent = true;
     urgencyType = 'critical_both';
     severity = 'critical';
-    badgeLabel = `⚡ Final ${hoursRemainingApprox}h • ${percentage}% Reached`;
-    badgeSubtext = `Ends in ${campaign.daysRemaining === 1 ? '24 hours' : `${hoursRemainingApprox} hours`} with only ${percentage}% to target`;
+    badgeLabel = `⚡ Final ${hoursRemainingApprox}h • ${formatUGX(remainingAmountUGX)} Needed`;
+    badgeSubtext = `Ends in ${campaign.daysRemaining === 1 ? '24 hours' : `${hoursRemainingApprox} hours`} with ${formatUGX(remainingAmountUGX)} to complete target`;
   } else if (isEndingSoon) {
     isUrgent = true;
     urgencyType = 'ending_48h';
@@ -58,8 +54,8 @@ export function getCampaignUrgencyInfo(campaign: Campaign): CampaignUrgencyInfo 
     isUrgent = true;
     urgencyType = 'near_target';
     severity = 'moderate';
-    badgeLabel = `🎯 ${percentage}% Raised • Final Push`;
-    badgeSubtext = `Only ${(100 - percentage)}% remaining to reach 100% goal`;
+    badgeLabel = `🎯 ${formatUGX(remainingAmountUGX)} Remaining • Final Push`;
+    badgeSubtext = `Only ${formatUGX(remainingAmountUGX)} needed to fulfill target goal`;
   }
 
   return {
@@ -70,7 +66,6 @@ export function getCampaignUrgencyInfo(campaign: Campaign): CampaignUrgencyInfo 
     badgeLabel,
     badgeSubtext,
     hoursRemainingApprox,
-    percentage,
     remainingAmountUGX,
     severity
   };

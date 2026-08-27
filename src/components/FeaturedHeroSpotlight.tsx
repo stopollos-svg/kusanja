@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { 
   AlertCircle,
   Building2, 
+  Calculator,
   CheckCircle2, 
   ChevronLeft,
   ChevronRight, 
@@ -29,7 +30,7 @@ import {
   Zap 
 } from 'lucide-react';
 import { Campaign } from '../types';
-import { formatUGX } from '../utils/formatters';
+import { formatUGX, formatSignedUGX, calculateDonationMinusTarget } from '../utils/formatters';
 import { calculateCampaignActivity, sortCampaignsForSpotlight } from '../utils/activity';
 import { KusanyaBrandLogo, KusanyaEmblem } from './KusanyaBrandLogo';
 
@@ -118,7 +119,10 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
 
   if (!currentSpotlight) return null;
 
-  const percentRaised = Math.min(100, Math.round((currentSpotlight.raisedAmount / currentSpotlight.targetAmount) * 100));
+  const { amountDonatedMinusTarget, remainingAmount } = calculateDonationMinusTarget(
+    currentSpotlight.raisedAmount,
+    currentSpotlight.targetAmount
+  );
 
   return (
     <section className="bg-gradient-to-b from-slate-50/80 via-white to-slate-50 border-b border-slate-200/80 pt-3 sm:pt-5 pb-8">
@@ -312,32 +316,37 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
                     {currentSpotlight.story}
                   </p>
 
-                  {/* Progress Stats */}
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-baseline justify-between text-xs sm:text-sm">
-                      <span className="font-extrabold text-slate-900 text-lg sm:text-xl">
-                        {formatUGX(currentSpotlight.raisedAmount)}
-                      </span>
-                      <span className="text-slate-500 font-medium">
-                        raised of <strong className="text-slate-700">{formatUGX(currentSpotlight.targetAmount)}</strong>
-                      </span>
-                    </div>
+                  {/* Target & Donated Minus Target Calculation Stats */}
+                  <div className="space-y-2.5 mb-4">
+                    <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 space-y-2">
+                      <div className="flex items-baseline justify-between text-xs sm:text-sm">
+                        <span className="text-slate-500 font-medium">
+                          Total Target Goal:
+                        </span>
+                        <span className="font-extrabold text-slate-900 text-base sm:text-lg">
+                          {formatUGX(currentSpotlight.targetAmount)}
+                        </span>
+                      </div>
 
-                    {/* Progress Bar */}
-                    <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
-                      <div 
-                        className="h-full bg-gradient-to-r from-amber-500 via-emerald-500 to-emerald-600 rounded-full transition-all duration-700 relative"
-                        style={{ width: `${percentRaised}%` }}
-                      ></div>
+                      <div className="flex items-center justify-between text-xs sm:text-sm pt-1 border-t border-slate-200/70">
+                        <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                          <Calculator className="w-4 h-4 text-emerald-600" />
+                          <span>Amount Donated − Target:</span>
+                        </span>
+                        <span className={`font-mono text-xs sm:text-sm font-black px-2 py-0.5 rounded-lg ${
+                          amountDonatedMinusTarget >= 0
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-amber-100 text-amber-900'
+                        }`}>
+                          {formatSignedUGX(amountDonatedMinusTarget)}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-slate-500 font-medium pt-1">
                       <span className="flex items-center gap-1 text-slate-700 font-bold">
                         <Users className="w-3.5 h-3.5 text-emerald-600" />
-                        {currentSpotlight.donorsCount} donations
-                      </span>
-                      <span className="font-black text-emerald-700">
-                        {percentRaised}% of goal
+                        {currentSpotlight.donorsCount} donations ({formatUGX(currentSpotlight.raisedAmount)} raised)
                       </span>
                       <span className="text-slate-500">
                         {currentSpotlight.daysRemaining} days left
@@ -384,7 +393,7 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
 
               {sideTrending.map((c) => {
                 const cStats = calculateCampaignActivity(c);
-                const cPercent = Math.min(100, Math.round((c.raisedAmount / c.targetAmount) * 100));
+                const cDiff = calculateDonationMinusTarget(c.raisedAmount, c.targetAmount);
                 return (
                   <div
                     key={c.id}
@@ -427,20 +436,16 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
                         </h4>
                       </div>
 
-                      {/* Mini Progress */}
-                      <div className="mt-2 space-y-1">
-                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-emerald-500 rounded-full"
-                            style={{ width: `${cPercent}%` }}
-                          ></div>
+                      {/* Financial Calculation summary */}
+                      <div className="mt-2 bg-slate-50 border border-slate-200/70 rounded-lg p-1.5 space-y-0.5 text-[11px]">
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span>Donated: <strong className="text-slate-900">{formatUGX(c.raisedAmount)}</strong></span>
+                          <span>Target: <strong className="text-slate-900">{formatUGX(c.targetAmount)}</strong></span>
                         </div>
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="font-extrabold text-slate-900">
-                            {formatUGX(c.raisedAmount)}
-                          </span>
-                          <span className="text-emerald-700 font-bold">
-                            {cPercent}% ({cStats.activityScore} pts)
+                        <div className="flex items-center justify-between pt-0.5 border-t border-slate-200/60 font-semibold">
+                          <span className="text-slate-500">Donated − Target:</span>
+                          <span className={cDiff.amountDonatedMinusTarget >= 0 ? 'text-emerald-700 font-mono font-bold' : 'text-amber-800 font-mono font-bold'}>
+                            {formatSignedUGX(cDiff.amountDonatedMinusTarget)}
                           </span>
                         </div>
                       </div>

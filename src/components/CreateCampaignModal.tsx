@@ -291,11 +291,11 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
         {/* Scrollable Form Body */}
         <div className="flex-1 overflow-y-auto">
 
-        {/* 5% Platform Maintenance Info Banner */}
+        {/* Zero Deductions Platform Transparency Banner */}
         <div className="bg-emerald-50/80 border-b border-emerald-100 px-4 sm:px-5 py-2 flex items-center justify-between text-[11px] text-emerald-900">
           <div className="flex items-center gap-1.5 font-medium">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span><strong>Transparent 5% Maintenance Model:</strong> 95% goes directly to the cause. 5% maintains telecom SMS, USSD gateways, and secure hosting.</span>
+            <span><strong>Zero Deductions Model:</strong> 100% of all donations go directly to the cause with 0% platform deductions.</span>
           </div>
         </div>
 
@@ -407,7 +407,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
                     required
                   />
                   <span className="text-[10px] text-emerald-700 font-semibold block mt-0.5">
-                    Target: {formatUGX(Number(targetAmount) || 0)} (95% Net to Cause: {formatUGX((Number(targetAmount) || 0) * 0.95)})
+                    Target: {formatUGX(Number(targetAmount) || 0)} (100% Direct to Cause • Zero Deductions)
                   </span>
                 </div>
               </div>
@@ -711,7 +711,7 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
                 <div className="space-y-1">
                   <span className="font-bold block">Instant Mobile Money Disbursement</span>
                   <p className="text-[11px] text-emerald-800 leading-relaxed">
-                    All MTN MoMo and Airtel Money donations made to your fundraiser can be withdrawn in real-time to your registered phone number. 95% is paid out directly; 5% covers telecom gateway and server maintenance.
+                    All MTN MoMo and Airtel Money donations made to your fundraiser can be withdrawn in real-time to your registered phone number. 100% is paid out directly with zero platform deductions.
                   </p>
                 </div>
               </div>
@@ -798,8 +798,8 @@ export const CreateCampaignModal: React.FC<CreateCampaignModalProps> = ({
                   <span className="font-bold text-emerald-700">{causeImages.length} Pictures</span>
                 </div>
                 <div className="flex justify-between font-medium text-emerald-800">
-                  <span>Net to Beneficiary (95%):</span>
-                  <span className="font-bold">{formatUGX((Number(targetAmount) || 0) * 0.95)}</span>
+                  <span>Net Direct to Beneficiary:</span>
+                  <span className="font-bold">{formatUGX(Number(targetAmount) || 0)} (100%)</span>
                 </div>
               </div>
 

@@ -1,6 +1,6 @@
 {
   "name": "Kusanya",
-  "description": "Kusanya (kusanya.org) is Uganda's premier crowdfunding, church giving, and community SACCO platform powered by MTN MoMo, Airtel Money, Visa/Debit Cards, and PayPal with transparent 5% platform maintenance.",
+  "description": "Kusanya (kusanya.org) is Uganda's premier crowdfunding, church giving, and community SACCO platform powered by MTN MoMo, Airtel Money, Visa/Debit Cards, and PayPal with zero deductions and direct beneficiary impact.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

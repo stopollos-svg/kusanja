@@ -207,8 +207,8 @@ app.post('/api/donations/initiate', (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'Minimum donation is UGX 500' });
   }
 
-  const platformFee = Math.round(parsedAmount * 0.05);
-  const netBeneficiaryAmount = parsedAmount - platformFee;
+  const platformFee = 0;
+  const netBeneficiaryAmount = parsedAmount;
   let resolvedProvider: MoMoProvider = provider || 'mtn';
 
   let prefix = 'MOMO-UG';
@@ -252,9 +252,11 @@ app.post('/api/donations/initiate', (req: Request, res: Response) => {
     donorPhone: donorPhone || '',
     phoneNumber: donorPhone || '',
     amount: parsedAmount,
-    platformFee,
-    feePercentage: 5,
-    netBeneficiaryAmount,
+    platformFee: 0,
+    feePercentage: 0,
+    netBeneficiaryAmount: parsedAmount,
+    amountDonatedMinusTarget: (campaign.raisedAmount + parsedAmount) - campaign.targetAmount,
+    remainingTargetBalance: Math.max(0, campaign.targetAmount - (campaign.raisedAmount + parsedAmount)),
     provider: resolvedProvider,
     isAnonymous: !!isAnonymous,
     message: message || '',
@@ -276,8 +278,10 @@ app.post('/api/donations/initiate', (req: Request, res: Response) => {
       provider: resolvedProvider,
       phone: donorPhone,
       amount: parsedAmount,
-      platformFee,
-      netBeneficiaryAmount,
+      platformFee: 0,
+      netBeneficiaryAmount: parsedAmount,
+      amountDonatedMinusTarget: tx.amountDonatedMinusTarget,
+      remainingTargetBalance: tx.remainingTargetBalance,
       promptText,
       ussdManualCode,
       reference
@@ -427,16 +431,20 @@ app.get('/api/admin/analytics', (req: Request, res: Response) => {
   const totalRaisedUGX = campaigns.reduce((sum, c) => sum + (c.raisedAmount || 0), 0);
   const totalTargetUGX = campaigns.reduce((sum, c) => sum + (c.targetAmount || 0), 0);
   const totalDonors = campaigns.reduce((sum, c) => sum + (c.donorsCount || 0), 0);
-  const totalPlatformFeesUGX = Math.round(totalRaisedUGX * 0.05);
-  const totalBeneficiaryFundsUGX = totalRaisedUGX - totalPlatformFeesUGX;
+  const totalPlatformFeesUGX = 0;
+  const totalBeneficiaryFundsUGX = totalRaisedUGX;
+  const totalAmountMinusTargetUGX = totalRaisedUGX - totalTargetUGX;
+  const totalRemainingUGX = Math.max(0, totalTargetUGX - totalRaisedUGX);
 
   res.json({
     success: true,
     analytics: {
       totalRaisedUGX,
       totalTargetUGX,
+      totalAmountMinusTargetUGX,
+      totalRemainingUGX,
       totalDonors,
-      totalPlatformFeesUGX,
+      totalPlatformFeesUGX: 0,
       totalBeneficiaryFundsUGX,
       activeCampaignsCount: campaigns.filter(c => c.status === 'active').length,
       kycVerifiedCount: campaigns.filter(c => c.organizerKycVerified).length,

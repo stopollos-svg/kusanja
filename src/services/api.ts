@@ -915,8 +915,8 @@ export const api = {
 
     // Fallback transaction creation
     const parsedAmount = Number(payload.amount);
-    const platformFee = Math.round(parsedAmount * 0.05);
-    const netBeneficiaryAmount = parsedAmount - platformFee;
+    const platformFee = 0;
+    const netBeneficiaryAmount = parsedAmount;
 
     let prefix = 'MOMO-UG';
     if (payload.provider === 'airtel') prefix = 'AM-UG';
@@ -928,6 +928,14 @@ export const api = {
     const networkRef = `NW-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
     const receiptNumber = `RCP-UGX-${Math.floor(1000000 + Math.random() * 9000000)}`;
 
+    const currentCampaigns = getStoredCampaigns();
+    const linkedCamp = currentCampaigns.find((c) => c.id === payload.campaignId);
+    const prevRaised = linkedCamp ? linkedCamp.raisedAmount : 0;
+    const campTarget = linkedCamp ? linkedCamp.targetAmount : 0;
+    const updatedRaised = prevRaised + parsedAmount;
+    const amountDonatedMinusTarget = updatedRaised - campTarget;
+    const remainingTargetBalance = Math.max(0, campTarget - updatedRaised);
+
     const tx: PaymentTransaction = {
       id: reference,
       reference,
@@ -937,9 +945,11 @@ export const api = {
       donorPhone: payload.donorPhone || '',
       phoneNumber: payload.donorPhone || '',
       amount: parsedAmount,
-      platformFee,
-      feePercentage: 5,
-      netBeneficiaryAmount,
+      platformFee: 0,
+      feePercentage: 0,
+      netBeneficiaryAmount: parsedAmount,
+      amountDonatedMinusTarget,
+      remainingTargetBalance,
       provider: payload.provider,
       isAnonymous: !!payload.isAnonymous,
       message: payload.message || '',
@@ -950,6 +960,9 @@ export const api = {
       networkTransactionId: networkRef,
       createdAt: new Date().toISOString(),
       receiptNumber,
+      campaignTitle: linkedCamp?.title,
+      campaignTarget: campTarget,
+      campaignRaised: updatedRaised,
     };
 
     return { success: true, transaction: tx };
@@ -991,9 +1004,11 @@ export const api = {
       donorPhone: '',
       phoneNumber: '',
       amount: 10000,
-      platformFee: 500,
-      feePercentage: 5,
-      netBeneficiaryAmount: 9500,
+      platformFee: 0,
+      feePercentage: 0,
+      netBeneficiaryAmount: 10000,
+      amountDonatedMinusTarget: 0,
+      remainingTargetBalance: 0,
       provider: 'mtn' as MoMoProvider,
       isAnonymous: false,
       message: '',
@@ -1009,6 +1024,9 @@ export const api = {
 
     tx.status = 'completed';
     tx.completedAt = new Date().toISOString();
+    tx.platformFee = 0;
+    tx.feePercentage = 0;
+    tx.netBeneficiaryAmount = tx.amount;
 
     // Update campaign in local storage
     const current = getStoredCampaigns();
@@ -1016,9 +1034,19 @@ export const api = {
     const updated = current.map((c) => {
       if (c.id === tx.campaignId) {
         newRaised = c.raisedAmount + tx.amount;
+        const amountDonatedMinusTarget = newRaised - c.targetAmount;
+        const remainingAmount = Math.max(0, c.targetAmount - newRaised);
+        tx.amountDonatedMinusTarget = amountDonatedMinusTarget;
+        tx.remainingTargetBalance = remainingAmount;
+        tx.campaignTitle = c.title;
+        tx.campaignTarget = c.targetAmount;
+        tx.campaignRaised = newRaised;
+
         return {
           ...c,
           raisedAmount: newRaised,
+          amountDonatedMinusTarget,
+          remainingAmount,
           donorsCount: c.donorsCount + 1,
         };
       }
@@ -1038,6 +1066,9 @@ export const api = {
       timestamp: new Date().toISOString(),
       transactionRef: tx.reference,
       verified: true,
+      campaignTitle: tx.campaignTitle,
+      campaignTarget: tx.campaignTarget,
+      campaignRaised: newRaised,
     };
     const donList = getStoredDonations();
     saveStoredDonations([cheer, ...donList]);
@@ -1242,8 +1273,10 @@ export const api = {
     const totalRaisedUGX = campaigns.reduce((sum, c) => sum + (c.raisedAmount || 0), 0);
     const totalTargetUGX = campaigns.reduce((sum, c) => sum + (c.targetAmount || 0), 0);
     const totalDonors = campaigns.reduce((sum, c) => sum + (c.donorsCount || 0), 0);
-    const totalPlatformFeesUGX = Math.round(totalRaisedUGX * 0.05);
-    const totalBeneficiaryFundsUGX = totalRaisedUGX - totalPlatformFeesUGX;
+    const totalPlatformFeesUGX = 0;
+    const totalBeneficiaryFundsUGX = totalRaisedUGX;
+    const totalAmountMinusTargetUGX = totalRaisedUGX - totalTargetUGX;
+    const totalRemainingUGX = Math.max(0, totalTargetUGX - totalRaisedUGX);
 
     const categoryStats: Record<string, { count: number; raisedUGX: number }> = {};
     campaigns.forEach(c => {
@@ -1276,8 +1309,10 @@ export const api = {
       analytics: {
         totalRaisedUGX,
         totalTargetUGX,
+        totalAmountMinusTargetUGX,
+        totalRemainingUGX,
         totalDonors,
-        totalPlatformFeesUGX,
+        totalPlatformFeesUGX: 0,
         totalBeneficiaryFundsUGX,
         activeCampaignsCount: campaigns.filter(c => c.status === 'active').length,
         featuredCampaignsCount: campaigns.filter(c => c.featured).length,

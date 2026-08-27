@@ -108,4 +108,32 @@ export function formatSocialTimestamp(dateString?: string | null): { relative: s
   return { relative, full, timeOnly, isToday };
 }
 
+export function formatSignedUGX(amount?: number | null): string {
+  if (amount === undefined || amount === null || isNaN(Number(amount))) {
+    return 'UGX 0';
+  }
+  const num = Math.round(Number(amount));
+  if (num === 0) return 'UGX 0';
+  if (num > 0) return `+UGX ${num.toLocaleString('en-US')}`;
+  return `-UGX ${Math.abs(num).toLocaleString('en-US')}`;
+}
+
+export function calculateDonationMinusTarget(raised?: number | null, target?: number | null) {
+  const safeRaised = Math.max(0, Number(raised) || 0);
+  const safeTarget = Math.max(0, Number(target) || 0);
+  const amountDonatedMinusTarget = safeRaised - safeTarget;
+  const remainingAmount = Math.max(0, safeTarget - safeRaised);
+  const isGoalMet = safeRaised >= safeTarget && safeTarget > 0;
+
+  return {
+    raisedAmount: safeRaised,
+    targetAmount: safeTarget,
+    amountDonatedMinusTarget,
+    remainingAmount,
+    isGoalMet,
+    formattedMinusTarget: formatSignedUGX(amountDonatedMinusTarget),
+    formattedRemaining: formatUGX(remainingAmount),
+  };
+}
+
 

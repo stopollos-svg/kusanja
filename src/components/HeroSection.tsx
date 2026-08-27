@@ -81,7 +81,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </h1>
 
           <p className="text-slate-300 text-sm sm:text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-6">
-            Mobilize funds or donate instantly from Uganda or the global diaspora to verified church projects, SACCO savings, medical emergencies, and tuition with 100% transparent 5% platform maintenance.
+            Mobilize funds or donate instantly from Uganda or the global diaspora to verified church projects, SACCO savings, medical emergencies, and tuition with 100% direct impact and zero deductions.
           </p>
 
           {/* CTAs */}
@@ -99,7 +99,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               className="flex items-center gap-2 px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold rounded-full active:scale-95 transition-all text-sm cursor-pointer"
             >
               <Smartphone className="w-4 h-4 text-emerald-400" />
-              <span>Payment Gateway & 5% Fee Info</span>
+              <span>Payment Gateway & Zero Deductions Info</span>
             </button>
           </div>
 

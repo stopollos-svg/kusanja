@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { PaymentTransaction, Campaign } from '../types';
-import { formatUGX } from './formatters';
+import { formatUGX, formatSignedUGX, calculateDonationMinusTarget } from './formatters';
 
 interface GenerateReceiptPDFOptions {
   transaction: PaymentTransaction;
@@ -9,6 +9,8 @@ interface GenerateReceiptPDFOptions {
   organizerName?: string;
   beneficiaryName?: string;
   beneficiaryPhone?: string;
+  targetAmount?: number;
+  raisedAmount?: number;
 }
 
 /**
@@ -22,6 +24,8 @@ export function generateDonationReceiptPDF({
   organizerName,
   beneficiaryName,
   beneficiaryPhone,
+  targetAmount,
+  raisedAmount,
 }: GenerateReceiptPDFOptions): void {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -173,40 +177,54 @@ export function generateDonationReceiptPDF({
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.setTextColor(darkSlate[0], darkSlate[1], darkSlate[2]);
-  doc.text('BENEFICIARY CAUSE DETAILS', margin, currentY);
+  doc.text('BENEFICIARY CAUSE & TARGET DETAILS', margin, currentY);
   currentY += 4;
 
+  const effectiveTarget = targetAmount || transaction.campaignTarget;
+  const effectiveRaised = raisedAmount || transaction.campaignRaised;
+  const hasTargetStats = effectiveTarget && effectiveTarget > 0;
+
+  const boxHeight = hasTargetStats ? 30 : 24;
+
   doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
-  doc.roundedRect(margin, currentY, contentWidth, 24, 2, 2, 'F');
+  doc.roundedRect(margin, currentY, contentWidth, boxHeight, 2, 2, 'F');
   doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
-  doc.roundedRect(margin, currentY, contentWidth, 24, 2, 2, 'D');
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
-  doc.setTextColor(darkSlate[0], darkSlate[1], darkSlate[2]);
-  const splitTitle = doc.splitTextToSize(campaignTitle, contentWidth - 12);
-  doc.text(splitTitle[0] || campaignTitle, margin + 6, currentY + 7);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(mutedGray[0], mutedGray[1], mutedGray[2]);
-  const catText = campaignCategory ? `Category: ${campaignCategory.toUpperCase()}  •  ` : '';
-  const benText = beneficiaryName ? `Beneficiary: ${beneficiaryName}${beneficiaryPhone ? ` (${beneficiaryPhone})` : ''}  •  ` : '';
-  const orgText = organizerName ? `Organizer: ${organizerName}  •  ` : '';
-  doc.text(`${catText}${benText}${orgText}Platform: Kusanya.org`, margin + 6, currentY + 14);
-
-  currentY += 32;
-
-  // 5. Itemized Financial Breakdown Table (with 5% Platform Fee)
-  const grossAmount = transaction.amount;
-  const platformFee = transaction.platformFee || Math.round(grossAmount * 0.05);
-  const netBeneficiaryAmount = transaction.netBeneficiaryAmount || (grossAmount - platformFee);
-  const approxUSD = (grossAmount / 3750).toFixed(2);
+  doc.roundedRect(margin, currentY, contentWidth, boxHeight, 2, 2, 'D');
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.setTextColor(darkSlate[0], darkSlate[1], darkSlate[2]);
-  doc.text('FINANCIAL BREAKDOWN & SETTLEMENT', margin, currentY);
+  const splitTitle = doc.splitTextToSize(campaignTitle, contentWidth - 12);
+  doc.text(splitTitle[0] || campaignTitle, margin + 6, currentY + 6.5);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(mutedGray[0], mutedGray[1], mutedGray[2]);
+  const catText = campaignCategory ? `Category: ${campaignCategory.toUpperCase()}  •  ` : '';
+  const benText = beneficiaryName ? `Beneficiary: ${beneficiaryName}${beneficiaryPhone ? ` (${beneficiaryPhone})` : ''}  •  ` : '';
+  const orgText = organizerName ? `Organizer: ${organizerName}  •  ` : '';
+  doc.text(`${catText}${benText}${orgText}Platform: Kusanya.org`, margin + 6, currentY + 12.5);
+
+  if (hasTargetStats) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(darkSlate[0], darkSlate[1], darkSlate[2]);
+    const { amountDonatedMinusTarget } = calculateDonationMinusTarget(effectiveRaised || 0, effectiveTarget);
+    doc.text(`Fundraiser Target: ${formatUGX(effectiveTarget)}   |   Total Donated: ${formatUGX(effectiveRaised || 0)}   |   Donated − Target: ${formatSignedUGX(amountDonatedMinusTarget)}`, margin + 6, currentY + 20);
+  }
+
+  currentY += boxHeight + 8;
+
+  // 5. Itemized Financial Breakdown Table (Zero Deductions Model)
+  const grossAmount = transaction.amount;
+  const approxUSD = (grossAmount / 3750).toFixed(2);
+  const targetVal = effectiveTarget || 0;
+  const singleDonationMinusTarget = grossAmount - targetVal;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(darkSlate[0], darkSlate[1], darkSlate[2]);
+  doc.text('FINANCIAL BREAKDOWN & TARGET CALCULATIONS', margin, currentY);
   currentY += 4;
 
   // Table Header
@@ -218,7 +236,7 @@ export function generateDonationReceiptPDF({
   doc.setFontSize(8.5);
   doc.setTextColor(255, 255, 255);
   doc.text('Description / Item', margin + 6, tableHeaderY + 5.5);
-  doc.text('Rate / Share', margin + contentWidth - 65, tableHeaderY + 5.5);
+  doc.text('Rate / Calculation', margin + contentWidth - 65, tableHeaderY + 5.5);
   doc.text('Amount (UGX)', margin + contentWidth - 6, tableHeaderY + 5.5, { align: 'right' });
 
   currentY += 8;
@@ -233,7 +251,7 @@ export function generateDonationReceiptPDF({
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
   doc.setTextColor(darkSlate[0], darkSlate[1], darkSlate[2]);
-  doc.text('Total Gross Donation Contribution', margin + 6, row1Y + 6);
+  doc.text('Donation Contribution Made', margin + 6, row1Y + 6);
   doc.setFont('helvetica', 'normal');
   doc.text(`100% (~$${approxUSD} USD)`, margin + contentWidth - 65, row1Y + 6);
   doc.setFont('helvetica', 'bold');
@@ -241,27 +259,24 @@ export function generateDonationReceiptPDF({
 
   currentY += 9;
 
-  // Table Row 2: 5% Platform Maintenance & Telecom Fee
+  // Table Row 2: Platform Deductions (0%)
   const row2Y = currentY;
   doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
-  doc.rect(margin, row2Y, contentWidth, 12, 'F');
+  doc.rect(margin, row2Y, contentWidth, 10, 'F');
   doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
-  doc.line(margin, row2Y + 12, margin + contentWidth, row2Y + 12);
+  doc.line(margin, row2Y + 10, margin + contentWidth, row2Y + 10);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(mutedGray[0], mutedGray[1], mutedGray[2]);
-  doc.text('Platform Maintenance & Telecom SMS Gateway Fee', margin + 6, row2Y + 5);
-  doc.setFontSize(7.5);
-  doc.text('(Server hosting, Bank of Uganda NPS audits & USSD push charges)', margin + 6, row2Y + 9);
-  
+  doc.text('Platform & Intermediary Deductions', margin + 6, row2Y + 6);
   doc.setFontSize(8.5);
-  doc.text('5.0%', margin + contentWidth - 65, row2Y + 6);
-  doc.text(`-${formatUGX(platformFee)}`, margin + contentWidth - 6, row2Y + 6, { align: 'right' });
+  doc.text('0.0% (Zero Fee)', margin + contentWidth - 65, row2Y + 6);
+  doc.text('UGX 0', margin + contentWidth - 6, row2Y + 6, { align: 'right' });
 
-  currentY += 12;
+  currentY += 10;
 
-  // Table Row 3: 95% Net Beneficiary Direct Payout (Highlighted)
+  // Table Row 3: 100% Net Direct to Cause
   const row3Y = currentY;
   doc.setFillColor(236, 253, 245); // Emerald-50
   doc.rect(margin, row3Y, contentWidth, 11, 'F');
@@ -272,13 +287,36 @@ export function generateDonationReceiptPDF({
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
   doc.setTextColor(primaryEmerald[0], primaryEmerald[1], primaryEmerald[2]);
-  doc.text('Net Credited to Beneficiary Cause Escrow', margin + 6, row3Y + 7);
+  doc.text('Net Credited Directly to Beneficiary Cause', margin + 6, row3Y + 7);
   doc.setFont('helvetica', 'bold');
-  doc.text('95.0%', margin + contentWidth - 65, row3Y + 7);
+  doc.text('100.0%', margin + contentWidth - 65, row3Y + 7);
   doc.setFontSize(10.5);
-  doc.text(formatUGX(netBeneficiaryAmount), margin + contentWidth - 6, row3Y + 7.5, { align: 'right' });
+  doc.text(formatUGX(grossAmount), margin + contentWidth - 6, row3Y + 7.5, { align: 'right' });
 
-  currentY += 18;
+  currentY += 13;
+
+  // Table Row 4: Calculation of Amount Donated Minus Total Target Value
+  if (targetVal > 0) {
+    const row4Y = currentY;
+    doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
+    doc.rect(margin, row4Y, contentWidth, 10, 'F');
+    doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+    doc.line(margin, row4Y + 10, margin + contentWidth, row4Y + 10);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(darkSlate[0], darkSlate[1], darkSlate[2]);
+    doc.text('Database Calculation: Donation Amount − Target Goal', margin + 6, row4Y + 6.5);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Target: ${formatUGX(targetVal)}`, margin + contentWidth - 65, row4Y + 6.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryEmerald[0], primaryEmerald[1], primaryEmerald[2]);
+    doc.text(formatSignedUGX(singleDonationMinusTarget), margin + contentWidth - 6, row4Y + 6.5, { align: 'right' });
+
+    currentY += 12;
+  }
+
+  currentY += 6;
 
   // 6. Optional Donor Encouragement Note
   if (transaction.message) {
