@@ -147,3 +147,92 @@ export function sortCampaignsForSpotlight(campaigns: Campaign[]): Campaign[] {
     return (b.donorsCount || 0) - (a.donorsCount || 0);
   });
 }
+
+/**
+ * Returns Top Active Sustained Causes (1-Year veterans, high activity score & donor counts)
+ */
+export function getTopSustainedCampaigns(campaigns: Campaign[], count = 10): Campaign[] {
+  const sorted = [...campaigns].sort((a, b) => {
+    const statsA = calculateCampaignActivity(a);
+    const statsB = calculateCampaignActivity(b);
+    if (statsA.isAtLeastOneYear !== statsB.isAtLeastOneYear) {
+      return statsA.isAtLeastOneYear ? -1 : 1;
+    }
+    if (statsB.activityScore !== statsA.activityScore) {
+      return statsB.activityScore - statsA.activityScore;
+    }
+    return (b.donorsCount || 0) - (a.donorsCount || 0);
+  });
+  return sorted.slice(0, count);
+}
+
+/**
+ * Returns Newly Created or Recent Fundraisers (sorted newest first)
+ */
+export function getNewFundraisers(campaigns: Campaign[], count = 10): Campaign[] {
+  const sorted = [...campaigns].sort((a, b) => {
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return timeB - timeA;
+  });
+  return sorted.slice(0, count);
+}
+
+/**
+ * Builds an alternating 10-cause spotlight pool interleaving:
+ * [Top Sustained #1, New Fundraiser #1, Top Sustained #2, New Fundraiser #2, ...]
+ * ensuring up to 10 distinct fundraisers in rotation.
+ */
+export function getAlternatingSpotlightPool(campaigns: Campaign[], maxCount = 10): Campaign[] {
+  if (campaigns.length <= maxCount) {
+    // If <= maxCount, still interleave if possible, else return sorted
+    return sortCampaignsForSpotlight(campaigns);
+  }
+
+  const sustained = getTopSustainedCampaigns(campaigns, maxCount);
+  const newest = getNewFundraisers(campaigns, maxCount);
+
+  const pool: Campaign[] = [];
+  const addedIds = new Set<string>();
+
+  let sIdx = 0;
+  let nIdx = 0;
+
+  while (pool.length < maxCount && (sIdx < sustained.length || nIdx < newest.length)) {
+    // 1. Add sustained
+    while (sIdx < sustained.length) {
+      const item = sustained[sIdx++];
+      if (!addedIds.has(item.id)) {
+        addedIds.add(item.id);
+        pool.push(item);
+        break;
+      }
+    }
+
+    if (pool.length >= maxCount) break;
+
+    // 2. Add new fundraiser
+    while (nIdx < newest.length) {
+      const item = newest[nIdx++];
+      if (!addedIds.has(item.id)) {
+        addedIds.add(item.id);
+        pool.push(item);
+        break;
+      }
+    }
+  }
+
+  // If still not reached maxCount, fill from remaining
+  if (pool.length < maxCount) {
+    for (const c of campaigns) {
+      if (!addedIds.has(c.id)) {
+        addedIds.add(c.id);
+        pool.push(c);
+        if (pool.length >= maxCount) break;
+      }
+    }
+  }
+
+  return pool;
+}
+

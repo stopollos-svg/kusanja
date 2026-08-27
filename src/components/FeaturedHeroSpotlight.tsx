@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   AlertCircle,
   Building2, 
@@ -15,8 +15,10 @@ import {
   Info,
   Landmark, 
   MapPin, 
-  Phone, 
+  Pause,
+  Play,
   Plus, 
+  RefreshCw,
   RotateCcw,
   Share2, 
   ShieldCheck, 
@@ -31,7 +33,13 @@ import {
 } from 'lucide-react';
 import { Campaign } from '../types';
 import { formatUGX, formatSignedUGX, calculateDonationMinusTarget } from '../utils/formatters';
-import { calculateCampaignActivity, sortCampaignsForSpotlight } from '../utils/activity';
+import { 
+  calculateCampaignActivity, 
+  sortCampaignsForSpotlight, 
+  getAlternatingSpotlightPool,
+  getTopSustainedCampaigns,
+  getNewFundraisers 
+} from '../utils/activity';
 import { KusanyaBrandLogo, KusanyaEmblem } from './KusanyaBrandLogo';
 
 interface FeaturedHeroSpotlightProps {
@@ -75,31 +83,57 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
   totalRaisedUGX,
   totalDonors,
 }) => {
-  // Sort campaigns dynamically based on 1-year sustained activity & momentum
-  const sortedSpotlightCampaigns = sortCampaignsForSpotlight(campaigns);
+  // 1. Build an alternating 10-campaign spotlight pool combining sustained causes and new fundraisers
+  const spotlightPool = getAlternatingSpotlightPool(campaigns, 10);
 
-  // Spotlight Filter Mode: 'one-year' (Active for at least 1 year) vs 'all'
-  const [spotlightFilterMode, setSpotlightFilterMode] = useState<'one-year' | 'all'>('one-year');
-  
-  // Selected spotlight candidate index
+  // 2. Separate lists for the side panel: Top Active Sustained Causes vs. New Fundraisers
+  const topSustainedList = getTopSustainedCampaigns(campaigns, 6);
+  const newFundraisersList = getNewFundraisers(campaigns, 6);
+
+  // Active spotlight index
   const [selectedSpotlightIndex, setSelectedSpotlightIndex] = useState<number>(0);
-  const [showActivityAudit, setShowActivityAudit] = useState(false);
+  const [isAutoPlaying, setIsAutoPlaying] = useState<boolean>(true);
+  const [isHovered, setIsHovered] = useState<boolean>(false);
+  const [showActivityAudit, setShowActivityAudit] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Candidates qualifying for 1-year sustained active spotlight
-  const oneYearActiveCandidates = sortedSpotlightCampaigns.filter(c => {
-    const stats = calculateCampaignActivity(c);
-    return stats.isAtLeastOneYear || stats.spotlightEligible;
-  });
+  // Side view mode: 'auto' (alternates between sustained and new) | 'sustained' | 'new'
+  const [sideViewMode, setSideViewMode] = useState<'auto' | 'sustained' | 'new'>('auto');
+  const [activeSideBatch, setActiveSideBatch] = useState<'sustained' | 'new'>('sustained');
 
-  const availableSpotlightList = spotlightFilterMode === 'one-year' && oneYearActiveCandidates.length > 0
-    ? oneYearActiveCandidates
-    : sortedSpotlightCampaigns;
+  // Auto-rotation timer for the main 10-cause hero spotlight (every 6 seconds)
+  useEffect(() => {
+    if (!isAutoPlaying || isHovered || spotlightPool.length <= 1) return;
 
-  const currentSpotlight = availableSpotlightList[selectedSpotlightIndex] || availableSpotlightList[0] || campaigns[0];
-  const sideTrending = sortedSpotlightCampaigns.filter(c => c.id !== currentSpotlight?.id).slice(0, 3);
+    const interval = setInterval(() => {
+      setSelectedSpotlightIndex((prev) => (prev + 1) % spotlightPool.length);
+    }, 6000);
 
+    return () => clearInterval(interval);
+  }, [isAutoPlaying, isHovered, spotlightPool.length]);
+
+  // Auto-rotation timer for alternating side causes (every 7 seconds when in 'auto' mode)
+  useEffect(() => {
+    if (sideViewMode !== 'auto' || isHovered) return;
+
+    const interval = setInterval(() => {
+      setActiveSideBatch((prev) => (prev === 'sustained' ? 'new' : 'sustained'));
+    }, 7000);
+
+    return () => clearInterval(interval);
+  }, [sideViewMode, isHovered]);
+
+  const currentSpotlight = spotlightPool[selectedSpotlightIndex] || spotlightPool[0] || campaigns[0];
   const currentStats = currentSpotlight ? calculateCampaignActivity(currentSpotlight) : null;
+
+  // Determine current side list based on mode & alternating cycle
+  const currentSideList = sideViewMode === 'sustained' 
+    ? topSustainedList.filter(c => c.id !== currentSpotlight?.id).slice(0, 3)
+    : sideViewMode === 'new'
+    ? newFundraisersList.filter(c => c.id !== currentSpotlight?.id).slice(0, 3)
+    : activeSideBatch === 'sustained'
+    ? topSustainedList.filter(c => c.id !== currentSpotlight?.id).slice(0, 3)
+    : newFundraisersList.filter(c => c.id !== currentSpotlight?.id).slice(0, 3);
 
   const handleShare = (e: React.MouseEvent, c: Campaign) => {
     e.stopPropagation();
@@ -119,7 +153,7 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
 
   if (!currentSpotlight) return null;
 
-  const { amountDonatedMinusTarget, remainingAmount } = calculateDonationMinusTarget(
+  const { amountDonatedMinusTarget } = calculateDonationMinusTarget(
     currentSpotlight.raisedAmount,
     currentSpotlight.targetAmount
   );
@@ -136,40 +170,66 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
               <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
                 Featured Fundraisers
               </h2>
-              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                Live & Verified
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Live & Verified ({spotlightPool.length} in Rotation)
               </span>
             </div>
             
-            {/* Spotlight Controls & Pager */}
-            <div className="flex items-center gap-2">
-              {availableSpotlightList.length > 1 && (
+            {/* 10-Cause Alternating Spotlight Controls & Pager */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {spotlightPool.length > 1 && (
                 <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
                   <button
-                    onClick={() => setSelectedSpotlightIndex((prev) => (prev > 0 ? prev - 1 : availableSpotlightList.length - 1))}
+                    onClick={() => setSelectedSpotlightIndex((prev) => (prev > 0 ? prev - 1 : spotlightPool.length - 1))}
                     className="p-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                    title="Previous Spotlight"
+                    title="Previous Spotlight Cause"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
+
+                  {/* 10 Dot/Number Pager Chips */}
                   <div className="flex items-center gap-1 px-1">
-                    {availableSpotlightList.slice(0, 5).map((_, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setSelectedSpotlightIndex(idx)}
-                        className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
-                          selectedSpotlightIndex === idx ? 'bg-emerald-600 w-4' : 'bg-slate-300 hover:bg-slate-400'
-                        }`}
-                        title={`Go to Spotlight #${idx + 1}`}
-                      />
-                    ))}
+                    {spotlightPool.map((c, idx) => {
+                      const stats = calculateCampaignActivity(c);
+                      const isSustained = stats.isAtLeastOneYear || stats.activityScore >= 75;
+                      const isActive = selectedSpotlightIndex === idx;
+                      return (
+                        <button
+                          key={c.id || idx}
+                          onClick={() => setSelectedSpotlightIndex(idx)}
+                          className={`h-5 px-1.5 rounded-full text-[10px] font-extrabold transition-all cursor-pointer flex items-center justify-center ${
+                            isActive
+                              ? 'bg-slate-900 text-emerald-400 shadow-sm min-w-[24px]'
+                              : isSustained
+                              ? 'bg-amber-100/90 text-amber-900 hover:bg-amber-200 w-5'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200 w-5'
+                          }`}
+                          title={`Cause #${idx + 1}: ${c.title} (${isSustained ? '1-Yr Sustained' : 'New Fundraiser'})`}
+                        >
+                          {idx + 1}
+                        </button>
+                      );
+                    })}
                   </div>
+
                   <button
-                    onClick={() => setSelectedSpotlightIndex((prev) => (prev < availableSpotlightList.length - 1 ? prev + 1 : 0))}
+                    onClick={() => setSelectedSpotlightIndex((prev) => (prev < spotlightPool.length - 1 ? prev + 1 : 0))}
                     className="p-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                    title="Next Spotlight"
+                    title="Next Spotlight Cause"
                   >
                     <ChevronRight className="w-4 h-4" />
+                  </button>
+
+                  {/* Play/Pause Auto-alternating */}
+                  <button
+                    onClick={() => setIsAutoPlaying(!isAutoPlaying)}
+                    className={`p-1 rounded-lg transition-colors cursor-pointer ml-0.5 ${
+                      isAutoPlaying ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'
+                    }`}
+                    title={isAutoPlaying ? 'Pause 6s Auto-Rotation' : 'Resume Auto-Rotation'}
+                  >
+                    {isAutoPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               )}
@@ -186,11 +246,24 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             
-            {/* Primary Main Spotlight Card (GoFundMe Lead Hero) */}
+            {/* Primary Main Spotlight Card (GoFundMe Lead Hero with 10-cause alternating cycle) */}
             <div 
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
               onClick={() => onSelectCampaign(currentSpotlight)}
               className="lg:col-span-7 bg-white rounded-3xl border border-slate-200/90 shadow-md hover:shadow-xl transition-all overflow-hidden flex flex-col cursor-pointer group relative"
             >
+              {/* Auto-cycle indicator bar */}
+              {isAutoPlaying && !isHovered && (
+                <div className="w-full bg-slate-100 h-1 overflow-hidden">
+                  <div 
+                    key={selectedSpotlightIndex}
+                    className="h-full bg-gradient-to-r from-emerald-500 to-amber-500 rounded-full animate-[progress_6s_linear]"
+                    style={{ animationDuration: '6000ms' }}
+                  />
+                </div>
+              )}
+
               {/* Lead Image with Badges */}
               <div className="relative aspect-[16/9] sm:aspect-[16/10] w-full overflow-hidden bg-slate-900">
                 <img 
@@ -200,17 +273,26 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent"></div>
                 
-                {/* Top Badges: 1-Year Spotlight & Longevity Indicator */}
+                {/* Top Badges: 1-Year Spotlight / New Fundraiser & Longevity Indicator */}
                 <div className="absolute top-3 left-3 flex flex-wrap items-center gap-2">
-                  <span className="bg-amber-500 text-slate-950 font-black text-xs px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                  <span className={`font-black text-xs px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md ${
+                    currentStats?.isAtLeastOneYear
+                      ? 'bg-amber-500 text-slate-950'
+                      : 'bg-emerald-500 text-white'
+                  }`}>
                     <KusanyaEmblem sizeClassName="w-3.5 h-3.5" />
-                    {currentStats?.statusBadgeText || 'Top Spotlight'}
+                    {currentStats?.isAtLeastOneYear ? currentStats.statusBadgeText : '⚡ Active Spotlight'}
                   </span>
 
-                  {currentStats?.isAtLeastOneYear && (
+                  {currentStats?.isAtLeastOneYear ? (
                     <span className="bg-slate-900/90 backdrop-blur-md text-amber-300 font-extrabold text-xs px-2.5 py-1 rounded-full flex items-center gap-1 border border-amber-400/40">
                       <Clock className="w-3 h-3 text-amber-400" />
                       {currentStats.lifespanLabel}
+                    </span>
+                  ) : (
+                    <span className="bg-slate-900/90 backdrop-blur-md text-emerald-300 font-extrabold text-xs px-2.5 py-1 rounded-full flex items-center gap-1 border border-emerald-400/40">
+                      <Sparkles className="w-3 h-3 text-emerald-400" />
+                      New Fundraiser
                     </span>
                   )}
 
@@ -265,7 +347,7 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
                     <div className="flex items-center gap-2">
                       <Flame className="w-4 h-4 text-amber-400" />
                       <strong className="text-amber-300 uppercase tracking-wider font-black">
-                        1-Year Sustained Activity Audit
+                        Activity & Longevity Audit
                       </strong>
                     </div>
                     <span className="bg-amber-500/20 text-amber-300 font-extrabold px-2 py-0.5 rounded border border-amber-500/30">
@@ -296,7 +378,7 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
                 </div>
               )}
 
-              {/* Spotlight Content & GoFundMe Action Box */}
+              {/* Spotlight Content & Action Box */}
               <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
                 <div>
                   {/* Spotlight Reason Header */}
@@ -379,80 +461,147 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
               </div>
             </div>
 
-            {/* Side Trending Featured Fundraisers (3 Cards) */}
-            <div className="lg:col-span-5 flex flex-col gap-3.5 justify-between">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                  <TrendingUp className="w-3.5 h-3.5 text-amber-500" />
-                  Top Active Sustained Causes
-                </span>
-                <span className="text-xs text-slate-500 font-medium">
-                  Ranked by 1-Yr Activity
-                </span>
+            {/* Alternating Side Section: Top Active Sustained Causes ⇄ New Fundraisers */}
+            <div 
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+              className="lg:col-span-5 flex flex-col gap-3.5 justify-between"
+            >
+              {/* Header with Switcher Tabs between Sustained and New */}
+              <div className="flex items-center justify-between px-1 flex-wrap gap-2">
+                <div className="flex items-center gap-1.5">
+                  {activeSideBatch === 'sustained' ? (
+                    <span className="text-xs font-black uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
+                      <TrendingUp className="w-3.5 h-3.5 text-amber-500" />
+                      Top Active Sustained Causes
+                    </span>
+                  ) : (
+                    <span className="text-xs font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                      New Fundraisers
+                    </span>
+                  )}
+                </div>
+
+                {/* Alternating Control Tabs */}
+                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl text-[11px] font-bold">
+                  <button
+                    onClick={() => {
+                      setSideViewMode('auto');
+                      setActiveSideBatch(activeSideBatch === 'sustained' ? 'new' : 'sustained');
+                    }}
+                    className={`px-2 py-0.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                      sideViewMode === 'auto'
+                        ? 'bg-white text-slate-900 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                    title="Auto-alternating between sustained causes and new fundraisers every 7s"
+                  >
+                    <RefreshCw className="w-2.5 h-2.5 text-emerald-600 animate-spin" />
+                    <span>Auto</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSideViewMode('sustained');
+                      setActiveSideBatch('sustained');
+                    }}
+                    className={`px-2 py-0.5 rounded-lg transition-all cursor-pointer ${
+                      sideViewMode === 'sustained'
+                        ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Sustained
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSideViewMode('new');
+                      setActiveSideBatch('new');
+                    }}
+                    className={`px-2 py-0.5 rounded-lg transition-all cursor-pointer ${
+                      sideViewMode === 'new'
+                        ? 'bg-emerald-600 text-white font-black shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    New
+                  </button>
+                </div>
               </div>
 
-              {sideTrending.map((c) => {
-                const cStats = calculateCampaignActivity(c);
-                const cDiff = calculateDonationMinusTarget(c.raisedAmount, c.targetAmount);
-                return (
-                  <div
-                    key={c.id}
-                    onClick={() => onSelectCampaign(c)}
-                    className="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-3.5 shadow-sm hover:shadow-md transition-all flex gap-3.5 cursor-pointer group hover:border-emerald-300"
-                  >
-                    {/* Thumbnail */}
-                    <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden shrink-0 bg-slate-100">
-                      <img 
-                        src={c.image} 
-                        alt={c.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                      />
-                      <span className="absolute bottom-1 right-1 text-[9px] font-bold bg-slate-900/80 text-white px-1.5 py-0.5 rounded">
-                        {c.district}
-                      </span>
-                      {cStats.isAtLeastOneYear && (
-                        <span className="absolute top-1 left-1 text-[9px] font-black bg-amber-500 text-slate-950 px-1 py-0.2 rounded shadow" title="1-Year Active">
-                          1-Yr
+              {/* List of 3 Alternating Cards */}
+              <div className="space-y-3">
+                {currentSideList.map((c) => {
+                  const cStats = calculateCampaignActivity(c);
+                  const cDiff = calculateDonationMinusTarget(c.raisedAmount, c.targetAmount);
+                  return (
+                    <div
+                      key={c.id}
+                      onClick={() => onSelectCampaign(c)}
+                      className="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-3.5 shadow-sm hover:shadow-md transition-all flex gap-3.5 cursor-pointer group hover:border-emerald-300"
+                    >
+                      {/* Thumbnail */}
+                      <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden shrink-0 bg-slate-100">
+                        <img 
+                          src={c.image} 
+                          alt={c.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                        />
+                        <span className="absolute bottom-1 right-1 text-[9px] font-bold bg-slate-900/80 text-white px-1.5 py-0.5 rounded">
+                          {c.district}
                         </span>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 flex flex-col justify-between min-w-0">
-                      <div>
-                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-                            {c.category}
+                        {cStats.isAtLeastOneYear ? (
+                          <span className="absolute top-1 left-1 text-[9px] font-black bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded shadow" title="1-Year Sustained Active">
+                            1-Yr
                           </span>
-                          <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                            {cStats.lifespanLabel}
+                        ) : (
+                          <span className="absolute top-1 left-1 text-[9px] font-black bg-emerald-600 text-white px-1.5 py-0.5 rounded shadow" title="New Fundraiser">
+                            New
                           </span>
-                          <span className="text-[10px] text-slate-400">
-                            • {c.donorsCount} givers
-                          </span>
-                        </div>
-                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-2 leading-tight group-hover:text-emerald-700 transition-colors">
-                          {c.title}
-                        </h4>
+                        )}
                       </div>
 
-                      {/* Financial Calculation summary */}
-                      <div className="mt-2 bg-slate-50 border border-slate-200/70 rounded-lg p-1.5 space-y-0.5 text-[11px]">
-                        <div className="flex items-center justify-between text-slate-600">
-                          <span>Donated: <strong className="text-slate-900">{formatUGX(c.raisedAmount)}</strong></span>
-                          <span>Target: <strong className="text-slate-900">{formatUGX(c.targetAmount)}</strong></span>
+                      {/* Info */}
+                      <div className="flex-1 flex flex-col justify-between min-w-0">
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                              {c.category}
+                            </span>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                              cStats.isAtLeastOneYear
+                                ? 'text-amber-700 bg-amber-50 border-amber-200'
+                                : 'text-teal-700 bg-teal-50 border-teal-200'
+                            }`}>
+                              {cStats.isAtLeastOneYear ? cStats.lifespanLabel : 'New Cause'}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              • {c.donorsCount} givers
+                            </span>
+                          </div>
+                          <h4 className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-2 leading-tight group-hover:text-emerald-700 transition-colors">
+                            {c.title}
+                          </h4>
                         </div>
-                        <div className="flex items-center justify-between pt-0.5 border-t border-slate-200/60 font-semibold">
-                          <span className="text-slate-500">Donated − Target:</span>
-                          <span className={cDiff.amountDonatedMinusTarget >= 0 ? 'text-emerald-700 font-mono font-bold' : 'text-amber-800 font-mono font-bold'}>
-                            {formatSignedUGX(cDiff.amountDonatedMinusTarget)}
-                          </span>
+
+                        {/* Financial Calculation summary */}
+                        <div className="mt-2 bg-slate-50 border border-slate-200/70 rounded-lg p-1.5 space-y-0.5 text-[11px]">
+                          <div className="flex items-center justify-between text-slate-600">
+                            <span>Donated: <strong className="text-slate-900">{formatUGX(c.raisedAmount)}</strong></span>
+                            <span>Target: <strong className="text-slate-900">{formatUGX(c.targetAmount)}</strong></span>
+                          </div>
+                          <div className="flex items-center justify-between pt-0.5 border-t border-slate-200/60 font-semibold">
+                            <span className="text-slate-500">Donated − Target:</span>
+                            <span className={cDiff.amountDonatedMinusTarget >= 0 ? 'text-emerald-700 font-mono font-bold' : 'text-amber-800 font-mono font-bold'}>
+                              {formatSignedUGX(cDiff.amountDonatedMinusTarget)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
 
               {/* Quick Start Card Banner */}
               <div 
@@ -529,4 +678,5 @@ export const FeaturedHeroSpotlight: React.FC<FeaturedHeroSpotlightProps> = ({
     </section>
   );
 };
+
 
