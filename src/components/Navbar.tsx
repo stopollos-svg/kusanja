@@ -75,7 +75,7 @@ export const Navbar: FC<NavbarProps> = ({
               className="hover:text-emerald-400 transition-colors hidden md:flex items-center gap-1 cursor-pointer text-xs"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Transparent 5% Maintenance • 95% Direct</span>
+              <span>Zero Deductions • 100% Direct to Cause</span>
             </button>
 
             <button

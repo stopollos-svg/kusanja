@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { 
   AlertCircle, 
+  Calculator,
   Check, 
   CheckCircle2, 
   Clock,
@@ -19,6 +20,7 @@ import {
   X 
 } from 'lucide-react';
 import { Campaign } from '../types';
+import { formatUGX, formatSignedUGX, calculateDonationMinusTarget } from '../utils/formatters';
 
 interface EditCampaignModalProps {
   campaign: Campaign;
@@ -378,6 +380,43 @@ export const EditCampaignModal: React.FC<EditCampaignModalProps> = ({
               </select>
             </div>
           </div>
+
+          {/* Live Financial Target Calculation Box */}
+          {Number(targetAmount) > 0 && (
+            <div className="bg-slate-900 text-white rounded-2xl p-3.5 space-y-2 border border-slate-800 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                  <Calculator className="w-3.5 h-3.5" />
+                  Target Calculation & Financial Balance
+                </span>
+                <span className="text-[10px] font-bold bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-800">
+                  Zero Deductions
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                <div className="bg-slate-800/80 p-2 rounded-xl">
+                  <span className="text-[10px] text-slate-400 block">Total Target:</span>
+                  <span className="font-bold text-white text-xs">{formatUGX(Number(targetAmount) || 0)}</span>
+                </div>
+                <div className="bg-slate-800/80 p-2 rounded-xl">
+                  <span className="text-[10px] text-slate-400 block">Amount Donated:</span>
+                  <span className="font-bold text-emerald-400 text-xs">{formatUGX(Number(raisedAmount) || 0)}</span>
+                </div>
+                <div className="bg-slate-800/80 p-2 rounded-xl">
+                  <span className="text-[10px] text-slate-400 block">Donated − Target:</span>
+                  <span className={`font-black text-xs ${
+                    (Number(raisedAmount) || 0) >= (Number(targetAmount) || 0) ? 'text-emerald-400' : 'text-amber-400'
+                  }`}>
+                    {formatSignedUGX((Number(raisedAmount) || 0) - (Number(targetAmount) || 0))}
+                  </span>
+                </div>
+                <div className="bg-slate-800/80 p-2 rounded-xl">
+                  <span className="text-[10px] text-slate-400 block">Platform Deductions:</span>
+                  <span className="font-bold text-teal-400 text-xs">UGX 0 (0%)</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Category & Location */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
